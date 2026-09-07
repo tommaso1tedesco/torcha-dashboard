@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import time
 import urllib.error
+from calendar import timegm
 from datetime import datetime, timezone
 
 import feedparser
