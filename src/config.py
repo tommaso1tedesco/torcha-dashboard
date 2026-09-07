@@ -14,7 +14,9 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "")
 
 ACTIVE_CATEGORIES = [
-    c.strip() for c in os.environ.get("ACTIVE_CATEGORIES", "attualita,tecnologia").split(",") if c.strip()
+    c.strip() for c in os.environ.get(
+        "ACTIVE_CATEGORIES", "attualita,ultima_ora,economia,politica,tecnologia,curiosita"
+    ).split(",") if c.strip()
 ]
 DASHBOARD_WINDOW_HOURS = int(os.environ.get("DASHBOARD_WINDOW_HOURS", "24"))
 

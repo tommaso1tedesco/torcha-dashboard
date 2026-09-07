@@ -35,8 +35,8 @@ categories:
         rss_url: "https://tg24.sky.it/rss/tg24.xml"                # verificato 200 OK, <rss>
       - name: "TGCom24"
         homepage: "https://www.tgcom24.mediaset.it"
-        via: rss
-        rss_url: "https://www.tgcom24.mediaset.it/rss/tgcom24.xml" # verificato 200 OK, <rss>
+        via: apify           # unico feed noto (rss/tgcom24.xml) è morto (contenuti fermi a mesi fa), nessuna alternativa trovata
+        rss_url: ""
       - name: "Rai News"
         homepage: "https://www.rainews.it"
         via: rss
@@ -87,41 +87,41 @@ categories:
       - name: "Il Sole 24 Ore"
         homepage: "https://www.ilsole24ore.com"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.ilsole24ore.com/rss/economia.xml"     # verificato 200 OK, <rss>
       - name: "Milano Finanza (MF)"
         homepage: "https://www.milanofinanza.it"
-        via: rss
-        rss_url: ""        # se assente, passare a via: apify
+        via: apify           # nessun feed RSS pubblico trovato (homepage senza link rss, percorsi comuni 404)
+        rss_url: ""
       - name: "ANSA — Economia"
         homepage: "https://www.ansa.it/sito/notizie/economia/economia.html"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.ansa.it/sito/notizie/economia/economia_rss.xml"  # verificato 200 OK, <rss>
       - name: "Repubblica — Economia"
         homepage: "https://www.repubblica.it/economia"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.repubblica.it/rss/economia/rss2.0.xml"  # verificato 200 OK, <rss>
       - name: "Corriere — Economia"
         homepage: "https://www.corriere.it/economia"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.corriere.it/dynamic-feed/rss/section/Economia.xml"  # verificato 200 OK, contenuti freschi (il vecchio xml2.corriereobjects.it/rss/economia.xml è morto, fermo a inizio 2024)
       - name: "The Economist"
         homepage: "https://www.economist.com"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.economist.com/finance-and-economics/rss.xml"  # verificato 200 OK, <rss> (solo titolo+abstract, coerente con paywall)
         paywall: true
       - name: "Financial Times"
         homepage: "https://www.ft.com"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.ft.com/rss/home"                      # verificato 200 OK, <rss>
         paywall: true
       - name: "Bloomberg"
         homepage: "https://www.bloomberg.com"
         via: rss
-        rss_url: ""
+        rss_url: "https://feeds.bloomberg.com/markets/news.rss"     # verificato 200 OK, <rss>
         paywall: true
       - name: "Reuters — Business"
         homepage: "https://www.reuters.com/business"
-        via: rss
+        via: apify            # come Reuters generale: feed RSS pubblici dismessi (401 sull'endpoint rss)
         rss_url: ""
 
   politica:
@@ -130,44 +130,44 @@ categories:
     sources:
       - name: "Pagella Politica"
         homepage: "https://pagellapolitica.it"
-        via: rss
-        rss_url: ""        # se assente, passare a via: apify
+        via: apify           # /feed restituisce l'app SPA (Nuxt), nessun link rss individuabile
+        rss_url: ""
       - name: "YouTrend"
         homepage: "https://www.youtrend.it"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.youtrend.it/feed/"                    # verificato 200 OK, <rss>
       - name: "ANSA — Politica"
         homepage: "https://www.ansa.it/sito/notizie/politica/politica.html"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.ansa.it/sito/notizie/politica/politica_rss.xml"  # verificato 200 OK, <rss>
       - name: "Repubblica — Politica"
         homepage: "https://www.repubblica.it/politica"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.repubblica.it/rss/politica/rss2.0.xml"  # verificato 200 OK, <rss>
       - name: "Corriere — Politica"
         homepage: "https://www.corriere.it/politica"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.corriere.it/dynamic-feed/rss/section/Politica.xml"  # verificato 200 OK, contenuti freschi (il vecchio xml2.corriereobjects.it/rss/politica.xml è morto: titoli vuoti, fermo ad ago 2024)
       - name: "Domani"
         homepage: "https://www.editorialedomani.it"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.editorialedomani.it/rss"              # verificato 200 OK, <rss>
       - name: "Il Foglio"
         homepage: "https://www.ilfoglio.it"
-        via: rss
+        via: apify           # sito SPA lato client, nessun feed statico raggiungibile (/rss è solo lo shell HTML)
         rss_url: ""
       - name: "Il Fatto Quotidiano"
         homepage: "https://www.ilfattoquotidiano.it"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.ilfattoquotidiano.it/feed/"           # verificato 200 OK, <rss>
       - name: "Il Giornale"
         homepage: "https://www.ilgiornale.it"
-        via: rss
+        via: apify           # sito SPA lato client, i percorsi rss.xml tentati restituiscono HTML (200 fittizio)
         rss_url: ""
       - name: "Politico Europe"
         homepage: "https://www.politico.eu"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.politico.eu/feed/"                    # verificato 200 OK, <rss>
 
   tecnologia:
     label: "Tecnologia"
@@ -183,7 +183,7 @@ categories:
       - name: "Wired Italia"
         homepage: "https://www.wired.it"
         via: rss
-        rss_url: "https://www.wired.it/feed/rss"                   # verificato 200 OK, <rss>
+        rss_url: "https://www.wired.it/feed/rss"                   # verificato 200 OK, <rss>; è il feed ufficiale (linkato dalla homepage) ma aggiorna con cadenza lenta (~settimane)
       - name: "Punto Informatico"
         homepage: "https://www.punto-informatico.it"
         via: rss
@@ -191,7 +191,7 @@ categories:
       - name: "ANSA — Tecnologia"
         homepage: "https://www.ansa.it/sito/notizie/tecnologia/tecnologia.html"
         via: rss
-        rss_url: "https://www.ansa.it/sito/notizie/tecnologia/tecnologia_rss.xml"  # verificato 200 OK, <rss>
+        rss_url: "https://www.ansa.it/canale_tecnologia/notizie/tecnologia_rss.xml"  # verificato 200 OK, contenuti freschi (il pattern /sito/notizie/... è morto per questa sezione, fermo al 2023)
       - name: "The Verge"
         homepage: "https://www.theverge.com"
         via: rss
@@ -210,25 +210,25 @@ categories:
     sources:
       - name: "Il Post"
         homepage: "https://www.ilpost.it"
-        via: rss
+        via: apify            # /feed/ risponde 403 (bot protection), niente RSS pubblico utilizzabile
         rss_url: ""
       - name: "Internazionale"
         homepage: "https://www.internazionale.it"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.internazionale.it/sitemaps/rss.xml"   # verificato 200 OK, <rss>
       - name: "Vox"
         homepage: "https://www.vox.com"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.vox.com/rss/index.xml"                # verificato 200 OK, <feed> (Atom)
       - name: "The Atlantic"
         homepage: "https://www.theatlantic.com"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.theatlantic.com/feed/all/"            # verificato 200 OK, <feed> (Atom)
         paywall: true
       - name: "BBC Future"
         homepage: "https://www.bbc.com/future"
         via: rss
-        rss_url: ""
+        rss_url: "https://www.bbc.com/future/feed.rss"              # verificato 200 OK, <rss>
 
 # =====================================================================
 # PARTE 2 — COSA CERCANO LE PERSONE (domanda di ricerca / interesse)

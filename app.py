@@ -16,7 +16,9 @@ from src.models import Article, Run
 st.set_page_config(page_title="Torcha — Notizie calde", layout="wide")
 init_db()
 
-CATEGORY_LABELS = {key: cat["label"] for key, cat in load_sources()["categories"].items()}
+_CATEGORIES_CFG = load_sources()["categories"]
+CATEGORY_LABELS = {key: cat["label"] for key, cat in _CATEGORIES_CFG.items()}
+VIEW_ONLY_CATEGORIES = {key for key, cat in _CATEGORIES_CFG.items() if cat.get("view_only")}
 
 VELOCITY_FRESH_HOURS = 3.0  # proxy v0 per l'indicatore ^: sostituito dal vero calcolo di velocità in Fase 5
 
@@ -80,6 +82,13 @@ for tab, category in zip(tabs, ACTIVE_CATEGORIES):
         articles = get_articles(category, DASHBOARD_WINDOW_HOURS)
         if not articles:
             st.info("Nessun articolo nelle ultime ore. Premi 'Aggiorna' per raccogliere dati.")
+            continue
+
+        if category in VIEW_ONLY_CATEGORIES:
+            # "Ultima ora" non è una categoria tematica: vista sulle generaliste ordinata per orario, senza clustering.
+            st.caption(f"{len(articles)} articoli, ultime {DASHBOARD_WINDOW_HOURS}h — ordinati per orario")
+            for a in articles:
+                st.write(f"🕒 {a.published_at.strftime('%d/%m %H:%M UTC')} — [{a.title}]({a.url}) — *{a.source}*")
             continue
 
         clusters = cluster_articles(articles)
