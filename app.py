@@ -9,9 +9,11 @@ from sqlalchemy import select
 from src.clustering import cluster_articles
 from src.config import ACTIVE_CATEGORIES, DASHBOARD_WINDOW_HOURS, load_sources
 from src.db import SessionLocal
+from src.ingest_interests import run_interest_ingest
 from src.ingest_rss import run_ingest
 from src.init_db import init_db
-from src.models import Article, Run
+from src.models import Article, InterestRun, Run, Signal
+from src.rising import compute_rising_themes
 
 st.set_page_config(page_title="Torcha — Notizie calde", layout="wide")
 init_db()
@@ -46,21 +48,46 @@ def get_last_run() -> Run | None:
         session.close()
 
 
+def get_last_interest_run() -> InterestRun | None:
+    session = SessionLocal()
+    try:
+        stmt = select(InterestRun).order_by(InterestRun.started_at.desc()).limit(1)
+        return session.execute(stmt).scalars().first()
+    finally:
+        session.close()
+
+
+def get_recent_signals(window_hours: int) -> list[Signal]:
+    since = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+    session = SessionLocal()
+    try:
+        stmt = select(Signal).where(Signal.fetched_at >= since)
+        return list(session.execute(stmt).scalars())
+    finally:
+        session.close()
+
+
 st.title("🔥 Torcha — Notizie calde")
 st.caption("Cosa sta scoppiando adesso, per categoria, ordinato per Heat score.")
 
 col_refresh, col_spacer = st.columns([1, 5])
 with col_refresh:
     if st.button("🔄 Aggiorna", type="primary"):
-        with st.spinner("Ingest in corso..."):
+        with st.spinner("Ingest notizie (Parte 1) in corso..."):
             summary = run_ingest()
+        with st.spinner("Ingest segnali di interesse (Parte 2) in corso..."):
+            interest_summary = run_interest_ingest()
         st.success(
-            f"Fatto: {summary['articles_ingested']} nuovi articoli, "
-            f"{len(summary['sources_ok'])} fonti OK, {len(summary['sources_failed'])} fonti fallite."
+            f"Notizie: {summary['articles_ingested']} nuovi articoli, "
+            f"{len(summary['sources_ok'])} fonti OK, {len(summary['sources_failed'])} fonti fallite. — "
+            f"Interesse: {interest_summary['signals_ingested']} nuovi segnali, "
+            f"{len(interest_summary['sources_ok'])} fonti OK, {len(interest_summary['sources_failed'])} fonti fallite."
         )
 
 last_run = get_last_run()
+last_interest_run = get_last_interest_run()
 with st.expander("Stato fonti (ultimo aggiornamento)", expanded=False):
+    st.markdown("#### Notizie (Parte 1)")
     if last_run is None:
         st.info("Nessun ingest ancora eseguito. Premi 'Aggiorna' per il primo run.")
     else:
@@ -74,6 +101,36 @@ with st.expander("Stato fonti (ultimo aggiornamento)", expanded=False):
             st.markdown(f"**⚠️ Fonti fallite ({len(last_run.sources_failed)})**")
             for s in last_run.sources_failed:
                 st.write(f"- {s}")
+
+    st.markdown("#### Interesse / domanda di ricerca (Parte 2)")
+    if last_interest_run is None:
+        st.info("Nessun ingest ancora eseguito.")
+    else:
+        st.write(f"Ultimo run: {last_interest_run.started_at.strftime('%d/%m/%Y %H:%M UTC')}")
+        c3, c4 = st.columns(2)
+        with c3:
+            st.markdown(f"**✅ Fonti OK ({len(last_interest_run.sources_ok)})**")
+            for s in last_interest_run.sources_ok:
+                st.write(f"- {s}")
+        with c4:
+            st.markdown(f"**⚠️ Fonti fallite ({len(last_interest_run.sources_failed)})**")
+            for s in last_interest_run.sources_failed:
+                st.write(f"- {s}")
+
+st.divider()
+st.header("🔎 Cosa cerca la gente")
+st.caption("Temi in salita per Rising score, con la fonte del segnale e le keyword correlate.")
+signals = get_recent_signals(DASHBOARD_WINDOW_HOURS)
+if not signals:
+    st.info("Nessun segnale di interesse nelle ultime ore. Premi 'Aggiorna' per raccoglierli (richiede APIFY_TOKEN).")
+else:
+    themes = compute_rising_themes(signals)
+    for t in themes[:20]:
+        cols = st.columns([1, 1, 3])
+        cols[0].metric("Rising score", t.rising_score)
+        cols[1].write(f"📡 {', '.join(t.sources)}")
+        cols[2].markdown(f"**{t.keyword}**")
+    st.divider()
 
 tabs = st.tabs([CATEGORY_LABELS.get(cat, cat) for cat in ACTIVE_CATEGORIES])
 

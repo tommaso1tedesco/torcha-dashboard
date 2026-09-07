@@ -239,24 +239,38 @@ interests:
 
   apify:
     token_env: "APIFY_TOKEN"        # il token sta in variabile d'ambiente
+    # NOTA: nessuno di questi Actor esiste in una vera modalità "trending now" pubblica
+    # per TikTok/YouTube/X senza login (solo Google Trends la offre davvero). Per gli altri
+    # tre usiamo hashtag/query "seed": i temi più caldi da Parte 1 (Heat score) + qualche
+    # hashtag generalista IT, e leggiamo il volume/engagement di risposta come segnale di
+    # interesse — è un'approssimazione onesta, non un vero feed "cosa sta esplodendo ora".
     actors:
-      # Confermare gli actor_id esatti sullo Store Apify e lo schema di input.
+      # ID e schema di input verificati dal vivo sull'Apify Store (pagina Input di ogni Actor).
       google_trends:
-        actor_id: ""                # es. trending searches + interest over time
-        input: { geo: "IT" }
+        actor_id: "data_xplorer/google-trends-fast-scraper"   # 357 utenti/mese, 4.9, aggiornato 2 mesi fa — unico actor che copre sia "trending" che "keyword" in uno
+        # mode "trending": top ricerche in salita per l'Italia nelle ultime 24h.
+        # mode "keyword": interest-over-time + query correlate, seed = titoli hot da Parte 1 (Heat score).
+        input_trending: { mode: "trending", trendingSearchesCountry: "IT", trendingSearchesTimeframe: "24", trendingSearchesCategories: [], trendingSearchesMaxItems: 50 }
+        input_keyword: { mode: "keyword", geo: "IT", predefinedTimeframe: "today 1-m", fetchRegionalData: false }
       google_serp:
-        actor_id: ""                # organico + People Also Ask + ricerche correlate
-        input: { country: "it", language: "it" }
+        actor_id: "apify/google-search-scraper"   # ufficiale Apify, 177K utenti, PAA + AI Overview inclusi
+        # seed = stessi titoli hot da Parte 1; countryCode/languageCode sono i nomi reali dei campi.
+        input: { countryCode: "it", languageCode: "it", maxPagesPerQuery: 1, aiOverview: { scrapeFullAiOverview: true } }
       tiktok_trending:
-        actor_id: ""
+        actor_id: "clockworks/tiktok-scraper"   # ufficiale Apify (Clockworks), 272K utenti
+        # niente "for you" pubblico: approssimiamo il trending con hashtag seed (temi hot + hashtag generalisti IT)
+        input: { resultsPerPage: 30, videoSearchSorting: "MOST_RELEVANT", videoSearchDateFilter: "ALL_TIME" }
       youtube_trending:
-        actor_id: ""
-        input: { geo: "IT" }
+        actor_id: "streamers/youtube-scraper"   # ufficiale Apify (Streamers), 111K utenti
+        # niente endpoint "trending" diretto: approssimiamo con ricerca per parola chiave (seed) filtrata su "oggi"
+        input: { maxResults: 10, dateFilter: "today", sortingOrder: "relevance" }
       x_trending:
-        actor_id: ""
+        actor_id: "apidojo/tweet-scraper"   # 98K utenti; niente "Trends for you" pubblico senza login: approssimiamo con searchTerms (seed) + sort Top
+        input: { maxItems: 50, sort: "Top", tweetLanguage: "it" }
       reddit_rising:
-        actor_id: ""
-        input: { subreddits: ["italy", "news", "worldnews"] }
+        actor_id: "trudax/reddit-scraper-lite"   # 41K utenti, 4.6 — sort "hot" sulle community indicate
+        input: { searchPosts: true, sort: "hot", maxPostCount: 20 }
+        subreddits: ["italy", "news", "worldnews"]
 
   wikipedia:
     project: "it.wikipedia"

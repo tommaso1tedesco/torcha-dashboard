@@ -9,22 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
 from src.models import Article
-
-# Stopword italiane essenziali: evitiamo una dipendenza extra (nltk) per una lista
-# ridotta usata solo a supporto del TF-IDF sui titoli.
-ITALIAN_STOPWORDS = [
-    "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "di", "a", "da", "in", "con",
-    "su", "per", "tra", "fra", "e", "è", "che", "chi", "cui", "non", "si", "come", "più",
-    "anche", "ma", "o", "se", "al", "allo", "alla", "ai", "agli", "alle", "del", "dello",
-    "della", "dei", "degli", "delle", "nel", "nello", "nella", "nei", "negli", "nelle",
-    "sul", "sullo", "sulla", "sui", "sugli", "sulle", "questo", "questa", "questi", "queste",
-    "quello", "quella", "quelli", "quelle", "suo", "sua", "suoi", "sue", "loro",
-]
+from src.textsim import group_by_similarity
 
 SIMILARITY_THRESHOLD = 0.35
 RECENCY_HALF_LIFE_HOURS = 12.0
@@ -45,33 +31,6 @@ class Cluster:
     @property
     def source_count(self) -> int:
         return len(set(self.sources))
-
-
-def _connected_components(similarity: np.ndarray, threshold: float) -> list[list[int]]:
-    n = similarity.shape[0]
-    parent = list(range(n))
-
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    def union(a, b):
-        ra, rb = find(a), find(b)
-        if ra != rb:
-            parent[ra] = rb
-
-    for i in range(n):
-        for j in range(i + 1, n):
-            if similarity[i, j] >= threshold:
-                union(i, j)
-
-    groups: dict[int, list[int]] = {}
-    for idx in range(n):
-        root = find(idx)
-        groups.setdefault(root, []).append(idx)
-    return list(groups.values())
 
 
 def _heat_score(cluster_articles: list[Article]) -> float:
@@ -102,11 +61,7 @@ def cluster_articles(articles: list[Article]) -> list[Cluster]:
         )]
 
     titles = [a.title for a in articles]
-    vectorizer = TfidfVectorizer(stop_words=ITALIAN_STOPWORDS, min_df=1)
-    tfidf = vectorizer.fit_transform(titles)
-    similarity = cosine_similarity(tfidf)
-
-    groups = _connected_components(similarity, SIMILARITY_THRESHOLD)
+    groups = group_by_similarity(titles, SIMILARITY_THRESHOLD)
 
     clusters = []
     for group_idx in groups:
