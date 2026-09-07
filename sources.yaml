@@ -266,9 +266,16 @@ interests:
         input: { maxResults: 10, dateFilter: "today", sortingOrder: "relevance" }
       x_trending:
         actor_id: "apidojo/tweet-scraper"   # 98K utenti; niente "Trends for you" pubblico senza login: approssimiamo con searchTerms (seed) + sort Top
+        # ATTENZIONE (verificato dal vivo, 07/09/2026): l'Actor risponde SUCCEEDED ma
+        # ritorna solo {"noResults": true} anche per query molto comuni (es. "from:elonmusk").
+        # Probabile degradazione lato X/anti-scraping più che bug nostro: il codice gestisce
+        # il caso senza crash (0 segnali), ma il segnale "x" è di fatto inattivo per ora.
         input: { maxItems: 50, sort: "Top", tweetLanguage: "it" }
       reddit_rising:
         actor_id: "trudax/reddit-scraper-lite"   # 41K utenti, 4.6 — sort "hot" sulle community indicate
+        # verificato dal vivo: serve l'URL .../hot/ (la sola root subreddit ritorna i metadati
+        # della community, non i post); la variante "Lite" non include voti/punteggio, quindi
+        # il codice usa il rank di posizione (ordine "hot") come metrica v0.
         input: { searchPosts: true, sort: "hot", maxPostCount: 20 }
         subreddits: ["italy", "news", "worldnews"]
 

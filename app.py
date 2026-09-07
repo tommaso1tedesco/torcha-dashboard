@@ -1,8 +1,6 @@
 """Dashboard Streamlit: notizie calde per categoria, clusterizzate per Heat score."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-
 import streamlit as st
 from sqlalchemy import select
 
@@ -12,8 +10,10 @@ from src.db import SessionLocal
 from src.ingest_interests import run_interest_ingest
 from src.ingest_rss import run_ingest
 from src.init_db import init_db
-from src.models import Article, InterestRun, Run, Signal
+from src.models import InterestRun, Run
+from src.queries import get_recent_articles, get_recent_signals
 from src.rising import compute_rising_themes
+from src.velocity import get_velocity_multipliers, lookup_velocity
 
 st.set_page_config(page_title="Torcha — Notizie calde", layout="wide")
 init_db()
@@ -21,22 +21,6 @@ init_db()
 _CATEGORIES_CFG = load_sources()["categories"]
 CATEGORY_LABELS = {key: cat["label"] for key, cat in _CATEGORIES_CFG.items()}
 VIEW_ONLY_CATEGORIES = {key for key, cat in _CATEGORIES_CFG.items() if cat.get("view_only")}
-
-VELOCITY_FRESH_HOURS = 3.0  # proxy v0 per l'indicatore ^: sostituito dal vero calcolo di velocità in Fase 5
-
-
-def get_articles(category: str, window_hours: int) -> list[Article]:
-    since = datetime.now(timezone.utc) - timedelta(hours=window_hours)
-    session = SessionLocal()
-    try:
-        stmt = (
-            select(Article)
-            .where(Article.category == category, Article.published_at >= since)
-            .order_by(Article.published_at.desc())
-        )
-        return list(session.execute(stmt).scalars())
-    finally:
-        session.close()
 
 
 def get_last_run() -> Run | None:
@@ -53,16 +37,6 @@ def get_last_interest_run() -> InterestRun | None:
     try:
         stmt = select(InterestRun).order_by(InterestRun.started_at.desc()).limit(1)
         return session.execute(stmt).scalars().first()
-    finally:
-        session.close()
-
-
-def get_recent_signals(window_hours: int) -> list[Signal]:
-    since = datetime.now(timezone.utc) - timedelta(hours=window_hours)
-    session = SessionLocal()
-    try:
-        stmt = select(Signal).where(Signal.fetched_at >= since)
-        return list(session.execute(stmt).scalars())
     finally:
         session.close()
 
@@ -125,18 +99,25 @@ if not signals:
     st.info("Nessun segnale di interesse nelle ultime ore. Premi 'Aggiorna' per raccoglierli (Wikipedia non richiede token; Google Trends/SERP/social richiedono APIFY_TOKEN).")
 else:
     themes = compute_rising_themes(signals)
+    rising_multipliers = get_velocity_multipliers("rising")
+    for t in themes:
+        mult, is_new = lookup_velocity(rising_multipliers, t.keyword)
+        t.rising_score = round(t.rising_score * mult, 3)
+        t.is_new = is_new
+    themes.sort(key=lambda t: t.rising_score, reverse=True)
+
     for t in themes[:20]:
         cols = st.columns([1, 1, 3])
         cols[0].metric("Rising score", t.rising_score)
         cols[1].write(f"📡 {', '.join(t.sources)}")
-        cols[2].markdown(f"**{t.keyword}**")
+        cols[2].markdown(f"**{t.keyword}**{' ^' if t.is_new else ''}")
     st.divider()
 
 tabs = st.tabs([CATEGORY_LABELS.get(cat, cat) for cat in ACTIVE_CATEGORIES])
 
 for tab, category in zip(tabs, ACTIVE_CATEGORIES):
     with tab:
-        articles = get_articles(category, DASHBOARD_WINDOW_HOURS)
+        articles = get_recent_articles(category, DASHBOARD_WINDOW_HOURS)
         if not articles:
             st.info("Nessun articolo nelle ultime ore. Premi 'Aggiorna' per raccogliere dati.")
             continue
@@ -149,11 +130,18 @@ for tab, category in zip(tabs, ACTIVE_CATEGORIES):
             continue
 
         clusters = cluster_articles(articles)
+        heat_multipliers = get_velocity_multipliers("heat", category=category)
+        for c in clusters:
+            mult, is_new = lookup_velocity(heat_multipliers, c.representative_title)
+            c.heat_score = round(c.heat_score * mult, 3)
+            c.is_new, c.velocity = is_new, mult
+        clusters.sort(key=lambda c: c.heat_score, reverse=True)
+
         st.caption(f"{len(articles)} articoli → {len(clusters)} storie, ultime {DASHBOARD_WINDOW_HOURS}h")
 
         for c in clusters:
-            hours_since = (datetime.now(timezone.utc) - c.latest_published_at).total_seconds() / 3600.0
-            velocity_flag = " ^" if hours_since <= VELOCITY_FRESH_HOURS else ""
+            # "^" = storia nuova (nessuno storico) o in accelerazione reale vs la sua baseline
+            velocity_flag = " ^" if (c.is_new or c.velocity > 1.2) else ""
 
             st.markdown(f"### {c.representative_title}{velocity_flag}")
             meta_cols = st.columns([1, 1, 2])

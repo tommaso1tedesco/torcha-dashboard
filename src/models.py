@@ -74,3 +74,25 @@ class Signal(Base):
     extra: Mapped[dict] = mapped_column(JSON, default=dict)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+
+class TopicSnapshot(Base):
+    """Fase 5: uno scatto per tema/cluster ad ogni ciclo di ingest, usato come baseline
+    storica per calcolare la vera velocità (tasso attuale vs media dei giorni precedenti).
+
+    `topic_key` è il titolo rappresentativo del cluster (Heat, kind="heat") o la keyword
+    rappresentativa del tema (Rising, kind="rising"), normalizzato (lowercase, strip).
+    Nota v0: il match nel tempo è per stringa esatta su `topic_key`, non per similarità
+    come il clustering "live" — una stessa storia che cambia titolo tra un run e l'altro
+    perde continuità storica. Limite noto, da eventualmente affinare in una fase successiva.
+    """
+
+    __tablename__ = "topic_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16), index=True)              # "heat" o "rising"
+    category: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)  # solo per "heat"
+    topic_key: Mapped[str] = mapped_column(String(512), index=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)      # n. articoli/segnali nel cluster
+    intensity: Mapped[float] = mapped_column(default=0.0)       # heat/rising score v0 al momento dello scatto
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

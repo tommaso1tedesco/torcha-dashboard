@@ -34,7 +34,9 @@ SEED_TOPICS_COUNT = 5
 SEED_LOOKBACK_HOURS = 24
 
 # Nomi di campo candidati per l'attribuzione keyword->item, in ordine di preferenza.
-_QUERY_FIELD_CANDIDATES = ["searchQuery", "query", "searchTerm", "inputHashtag", "hashtag"]
+# Verificati dal vivo sugli Actor reali: "input" (TikTok, YouTube) e "searchHashtag"
+# (TikTok) rimandano esattamente al seed usato, quindi vengono prima degli altri.
+_QUERY_FIELD_CANDIDATES = ["input", "searchHashtag", "searchQuery", "query", "searchTerm", "inputHashtag", "hashtag"]
 
 
 def _shorten_to_query(title: str, max_words: int = 4) -> str:
@@ -103,18 +105,23 @@ def _save_signals(rows: list[dict]) -> None:
 
 
 def _ingest_google_trends_daily(cfg: dict) -> list[dict]:
+    """Output reale (verificato dal vivo): un solo item con dentro trending_searches:
+    [{rank, term, trend_volume: "500K+", trend_volume_formatted: 500000, related_terms: [...]}]."""
     result = run_actor(cfg["actor_id"], cfg["input_trending"])
+    if not result:
+        return []
+    trends = result[0].get("trending_searches", [])
     rows = []
-    for item in result:
-        keyword = item.get("query") or item.get("title") or item.get("keyword") or item.get("searchTerm")
+    now = datetime.now(timezone.utc)
+    for t in trends:
+        keyword = t.get("term")
         if not keyword:
             continue
-        metric = _parse_numeric(
-            item.get("trafficValue") or item.get("traffic") or item.get("searchVolume") or item.get("formattedTraffic")
-        ) or 1.0
+        metric = t.get("trend_volume_formatted") or _parse_numeric(t.get("trend_volume")) or 1.0
         rows.append({
             "signal_source": "google_trends_daily", "keyword": str(keyword)[:512],
-            "metric": metric, "extra": {"raw_keys": list(item.keys())}, "fetched_at": datetime.now(timezone.utc),
+            "metric": float(metric), "extra": {"related_terms": (t.get("related_terms") or [])[:10]},
+            "fetched_at": now,
         })
     return rows
 
@@ -201,20 +208,32 @@ def _ingest_x(cfg: dict, seeds: list[str]) -> list[dict]:
 
 
 def _ingest_reddit(cfg: dict) -> list[dict]:
-    start_urls = [{"url": f"https://www.reddit.com/r/{sub}/"} for sub in cfg.get("subreddits", [])]
+    """Nota (verificato dal vivo): serve .../hot/ nell'URL, non solo la root della subreddit
+    (altrimenti l'Actor ritorna i metadati della community, non i post). La variante "Lite"
+    di questo Actor non include voti/punteggio nell'output: usiamo il rank di posizione
+    (l'ordine "hot" è già per engagement) come metrica v0."""
+    subs = cfg.get("subreddits", [])
+    start_urls = [{"url": f"https://www.reddit.com/r/{sub}/hot/"} for sub in subs]
     if not start_urls:
         return []
-    result = run_actor(cfg["actor_id"], {**cfg["input"], "startUrls": start_urls})
+    # maxItems è il tetto complessivo del dataset (default basso se omesso): deve coprire
+    # tutte le subreddit, non solo maxPostCount (che è per singolo start URL).
+    max_items = cfg["input"].get("maxPostCount", 20) * len(subs)
+    input_ = {
+        **cfg["input"], "startUrls": start_urls, "maxItems": max_items,
+        "searchCommunities": False, "searchComments": False, "searchUsers": False,
+    }
+    result = run_actor(cfg["actor_id"], input_)
     rows = []
-    for item in result:
-        title = item.get("title")
-        if not title:
-            continue
-        metric = _parse_numeric(item.get("upVotes") or item.get("score") or item.get("numberOfUpvotes") or 0)
+    now = datetime.now(timezone.utc)
+    posts = [item for item in result if item.get("dataType") == "post" and item.get("title")]
+    n = len(posts)
+    for rank, item in enumerate(posts):
+        metric = _parse_numeric(item.get("upVotes") or item.get("score") or item.get("numberOfUpvotes")) or float(n - rank)
         rows.append({
-            "signal_source": "reddit", "keyword": str(title)[:512], "metric": metric,
-            "extra": {"post_url": item.get("url") or item.get("permalink"), "subreddit": item.get("communityName")},
-            "fetched_at": datetime.now(timezone.utc),
+            "signal_source": "reddit", "keyword": str(item["title"])[:512], "metric": metric,
+            "extra": {"post_url": item.get("url"), "subreddit": item.get("communityName")},
+            "fetched_at": now,
         })
     return rows
 

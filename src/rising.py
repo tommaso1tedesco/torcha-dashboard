@@ -24,6 +24,7 @@ class Theme:
     keyword: str
     signals: list[Signal] = field(default_factory=list)
     rising_score: float = 0.0
+    is_new: bool = False  # nessuno storico Fase 5 ancora disponibile per questo tema
 
     @property
     def sources(self) -> list[str]:

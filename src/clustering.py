@@ -23,6 +23,8 @@ class Cluster:
     sources: list[str] = field(default_factory=list)
     latest_published_at: datetime | None = None
     heat_score: float = 0.0
+    is_new: bool = False       # nessuno storico Fase 5 ancora disponibile per questo cluster
+    velocity: float = 1.0      # moltiplicatore Fase 5 già applicato a heat_score (1.0 = neutro/nuovo)
 
     @property
     def article_count(self) -> int:
