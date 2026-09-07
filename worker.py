@@ -7,12 +7,14 @@ import logging
 import sys
 
 from src.ingest_rss import run_ingest
+from src.init_db import init_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("worker")
 
 
 def main() -> int:
+    init_db()  # idempotente: se il worker parte prima della dashboard, crea comunque lo schema
     logger.info("Avvio ingest...")
     summary = run_ingest()
     logger.info("Fonti OK (%d): %s", len(summary["sources_ok"]), summary["sources_ok"])
