@@ -1,0 +1,268 @@
+# =====================================================================
+# sources.yaml — configurazione fonti della dashboard editoriale
+# =====================================================================
+# ISTRUZIONI PER CHI COMPILA:
+# - I campi `rss_url` sono da VERIFICARE dal vivo alla build. NON inventarli.
+#   Se una testata non ha un RSS pubblico funzionante, impostare `via: apify`.
+# - `via: rss`    -> raccolta tramite feed RSS (gratis, stabile).
+# - `via: apify`  -> raccolta tramite Actor Apify (proxy/anti-bot gestiti da Apify).
+# - `paywall: true` -> il feed dà solo titolo + abstract (niente testo completo):
+#   va benissimo come SEGNALE di cosa è caldo, non per ripubblicare.
+# - Una fonte può comparire in più categorie con la sua sezione dedicata (es. ANSA).
+# =====================================================================
+
+settings:
+  geo: IT
+  lang: it
+  # frequenza del worker cron (minuti). Partire alti per contenere i costi Apify.
+  refresh_minutes: 45
+
+# =====================================================================
+# PARTE 1 — NOTIZIE CALDE, DIVISE PER CATEGORIA
+# =====================================================================
+categories:
+
+  attualita:
+    label: "Attualità"
+    sources:
+      - name: "ANSA"
+        homepage: "https://www.ansa.it"
+        via: rss
+        rss_url: "https://www.ansa.it/sito/ansait_rss.xml"        # verificato 200 OK, <rss>
+      - name: "Sky TG24"
+        homepage: "https://tg24.sky.it"
+        via: rss
+        rss_url: "https://tg24.sky.it/rss/tg24.xml"                # verificato 200 OK, <rss>
+      - name: "TGCom24"
+        homepage: "https://www.tgcom24.mediaset.it"
+        via: rss
+        rss_url: "https://www.tgcom24.mediaset.it/rss/tgcom24.xml" # verificato 200 OK, <rss>
+      - name: "Rai News"
+        homepage: "https://www.rainews.it"
+        via: rss
+        rss_url: "https://www.rainews.it/rss/tutti"                # verificato 200 OK, <rss>
+      - name: "Adnkronos"
+        homepage: "https://www.adnkronos.com"
+        via: rss
+        rss_url: "https://www.adnkronos.com/RSS_PrimaPagina.xml"   # verificato 200 OK, <rss> (feed "Prima Pagina")
+      - name: "Fanpage"
+        homepage: "https://www.fanpage.it"
+        via: apify           # feed /feed/ risponde 403 (bot protection Akamai) - niente RSS pubblico utilizzabile
+        rss_url: ""
+      - name: "Open"
+        homepage: "https://www.open.online"
+        via: rss
+        rss_url: "https://www.open.online/feed/"                   # verificato 200 OK, <rss>
+      - name: "Reuters"
+        homepage: "https://www.reuters.com"
+        via: apify            # Reuters ha dismesso i feed RSS pubblici nel 2020, nessuna alternativa ufficiale
+        rss_url: ""
+      - name: "Associated Press"
+        homepage: "https://apnews.com"
+        via: apify            # nessun feed RSS pubblico stabile (endpoint hub restituisce HTML, non XML)
+        rss_url: ""
+      - name: "AFP"
+        homepage: "https://www.afp.com"
+        via: apify            # AFP non pubblica feed RSS diretti (sindacazione solo tramite partner)
+        rss_url: ""
+
+  ultima_ora:
+    label: "Ultima ora"
+    # NON sono fonti nuove: è la vista "più recenti per orario" sulle generaliste.
+    # Usare i feed "Ultima Ora" dedicati dove esistono; ordinare per timestamp.
+    view_only: true
+    sources:
+      - name: "ANSA — Ultima Ora"
+        homepage: "https://www.ansa.it/sito/notizie/topnews/ultimaora.html"
+        via: rss
+        rss_url: "https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml"  # verificato 200 OK, <rss>
+      - name: "Adnkronos — Ultima Ora"
+        homepage: "https://www.adnkronos.com"
+        via: rss
+        rss_url: "https://www.adnkronos.com/RSS_Ultimora.xml"      # verificato 200 OK, <rss>
+
+  economia:
+    label: "Economia"
+    sources:
+      - name: "Il Sole 24 Ore"
+        homepage: "https://www.ilsole24ore.com"
+        via: rss
+        rss_url: ""
+      - name: "Milano Finanza (MF)"
+        homepage: "https://www.milanofinanza.it"
+        via: rss
+        rss_url: ""        # se assente, passare a via: apify
+      - name: "ANSA — Economia"
+        homepage: "https://www.ansa.it/sito/notizie/economia/economia.html"
+        via: rss
+        rss_url: ""
+      - name: "Repubblica — Economia"
+        homepage: "https://www.repubblica.it/economia"
+        via: rss
+        rss_url: ""
+      - name: "Corriere — Economia"
+        homepage: "https://www.corriere.it/economia"
+        via: rss
+        rss_url: ""
+      - name: "The Economist"
+        homepage: "https://www.economist.com"
+        via: rss
+        rss_url: ""
+        paywall: true
+      - name: "Financial Times"
+        homepage: "https://www.ft.com"
+        via: rss
+        rss_url: ""
+        paywall: true
+      - name: "Bloomberg"
+        homepage: "https://www.bloomberg.com"
+        via: rss
+        rss_url: ""
+        paywall: true
+      - name: "Reuters — Business"
+        homepage: "https://www.reuters.com/business"
+        via: rss
+        rss_url: ""
+
+  politica:
+    label: "Politica"
+    # Mix volutamente di orientamenti diversi per un quadro equilibrato.
+    sources:
+      - name: "Pagella Politica"
+        homepage: "https://pagellapolitica.it"
+        via: rss
+        rss_url: ""        # se assente, passare a via: apify
+      - name: "YouTrend"
+        homepage: "https://www.youtrend.it"
+        via: rss
+        rss_url: ""
+      - name: "ANSA — Politica"
+        homepage: "https://www.ansa.it/sito/notizie/politica/politica.html"
+        via: rss
+        rss_url: ""
+      - name: "Repubblica — Politica"
+        homepage: "https://www.repubblica.it/politica"
+        via: rss
+        rss_url: ""
+      - name: "Corriere — Politica"
+        homepage: "https://www.corriere.it/politica"
+        via: rss
+        rss_url: ""
+      - name: "Domani"
+        homepage: "https://www.editorialedomani.it"
+        via: rss
+        rss_url: ""
+      - name: "Il Foglio"
+        homepage: "https://www.ilfoglio.it"
+        via: rss
+        rss_url: ""
+      - name: "Il Fatto Quotidiano"
+        homepage: "https://www.ilfattoquotidiano.it"
+        via: rss
+        rss_url: ""
+      - name: "Il Giornale"
+        homepage: "https://www.ilgiornale.it"
+        via: rss
+        rss_url: ""
+      - name: "Politico Europe"
+        homepage: "https://www.politico.eu"
+        via: rss
+        rss_url: ""
+
+  tecnologia:
+    label: "Tecnologia"
+    sources:
+      - name: "HDblog"
+        homepage: "https://www.hdblog.it"
+        via: rss
+        rss_url: "https://www.hdblog.it/rss/"                      # verificato 200 OK, <rss>
+      - name: "DDay.it"
+        homepage: "https://www.dday.it"
+        via: rss
+        rss_url: "https://www.dday.it/rss"                         # verificato 200 OK, <feed> (Atom)
+      - name: "Wired Italia"
+        homepage: "https://www.wired.it"
+        via: rss
+        rss_url: "https://www.wired.it/feed/rss"                   # verificato 200 OK, <rss>
+      - name: "Punto Informatico"
+        homepage: "https://www.punto-informatico.it"
+        via: rss
+        rss_url: "https://www.punto-informatico.it/feed/"          # verificato 200 OK, <rss>
+      - name: "ANSA — Tecnologia"
+        homepage: "https://www.ansa.it/sito/notizie/tecnologia/tecnologia.html"
+        via: rss
+        rss_url: "https://www.ansa.it/sito/notizie/tecnologia/tecnologia_rss.xml"  # verificato 200 OK, <rss>
+      - name: "The Verge"
+        homepage: "https://www.theverge.com"
+        via: rss
+        rss_url: "https://www.theverge.com/rss/index.xml"          # verificato 200 OK, <feed> (Atom)
+      - name: "Ars Technica"
+        homepage: "https://arstechnica.com"
+        via: rss
+        rss_url: "https://feeds.arstechnica.com/arstechnica/index" # verificato 200 OK, <rss>
+      - name: "TechCrunch"
+        homepage: "https://techcrunch.com"
+        via: rss
+        rss_url: "https://techcrunch.com/feed/"                    # verificato 200 OK, <rss>
+
+  curiosita:
+    label: "Curiosità / Approfondimento"
+    sources:
+      - name: "Il Post"
+        homepage: "https://www.ilpost.it"
+        via: rss
+        rss_url: ""
+      - name: "Internazionale"
+        homepage: "https://www.internazionale.it"
+        via: rss
+        rss_url: ""
+      - name: "Vox"
+        homepage: "https://www.vox.com"
+        via: rss
+        rss_url: ""
+      - name: "The Atlantic"
+        homepage: "https://www.theatlantic.com"
+        via: rss
+        rss_url: ""
+        paywall: true
+      - name: "BBC Future"
+        homepage: "https://www.bbc.com/future"
+        via: rss
+        rss_url: ""
+
+# =====================================================================
+# PARTE 2 — COSA CERCANO LE PERSONE (domanda di ricerca / interesse)
+# =====================================================================
+# NOTA: niente LLM. Le query fatte a ChatGPT/Gemini/ecc. sono private e
+# non esistono come dato pubblico: non c'è nulla da raccogliere lì.
+interests:
+
+  apify:
+    token_env: "APIFY_TOKEN"        # il token sta in variabile d'ambiente
+    actors:
+      # Confermare gli actor_id esatti sullo Store Apify e lo schema di input.
+      google_trends:
+        actor_id: ""                # es. trending searches + interest over time
+        input: { geo: "IT" }
+      google_serp:
+        actor_id: ""                # organico + People Also Ask + ricerche correlate
+        input: { country: "it", language: "it" }
+      tiktok_trending:
+        actor_id: ""
+      youtube_trending:
+        actor_id: ""
+        input: { geo: "IT" }
+      x_trending:
+        actor_id: ""
+      reddit_rising:
+        actor_id: ""
+        input: { subreddits: ["italy", "news", "worldnews"] }
+
+  wikipedia:
+    project: "it.wikipedia"
+    method: "pageviews_api"         # API REST ufficiale, gratuita
+    signals: ["top_daily", "per_article_trend"]
+
+  google_autocomplete:
+    enabled: true
+    # endpoint suggest pubblico; le keyword seed arrivano dai temi caldi delle notizie
