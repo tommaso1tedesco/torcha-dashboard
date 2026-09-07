@@ -4,8 +4,6 @@ from __future__ import annotations
 import logging
 import time
 import urllib.error
-import urllib.request
-from calendar import timegm
 from datetime import datetime, timezone
 
 import feedparser
@@ -13,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from src.config import ACTIVE_CATEGORIES, all_sources_for_category
 from src.db import SessionLocal
+from src.http import fetch_bytes
 from src.models import Article, Run
 
 logger = logging.getLogger("ingest_rss")
@@ -26,9 +25,7 @@ def _fetch_feed(url: str) -> feedparser.FeedParserDict | None:
     last_error = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
-                raw = resp.read()
+            raw = fetch_bytes(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_SECONDS)
             parsed = feedparser.parse(raw)
             if parsed.bozo and not parsed.entries:
                 raise ValueError(f"feed non parsabile: {parsed.bozo_exception}")

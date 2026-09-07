@@ -5,13 +5,14 @@ Richiede uno User-Agent descrittivo (norma d'uso Wikimedia).
 """
 from __future__ import annotations
 
+import json
 import logging
 import urllib.error
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from statistics import mean
 
 from src.config import load_sources
+from src.http import fetch_bytes
 from src.models import Signal
 
 logger = logging.getLogger("ingest_wikipedia")
@@ -32,10 +33,8 @@ _EXCLUDED_TITLES = {"Pagina_principale"}
 
 
 def _get(url: str) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
-        import json
-        return json.loads(resp.read())
+    raw = fetch_bytes(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_SECONDS)
+    return json.loads(raw)
 
 
 def _fetch_top_daily(project: str) -> list[tuple[str, int]]:

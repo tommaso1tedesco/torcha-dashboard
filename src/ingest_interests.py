@@ -17,7 +17,6 @@ import json
 import logging
 import re
 import urllib.parse
-import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -26,6 +25,7 @@ from src.apify_client_wrapper import run_actor
 from src.config import APIFY_TOKEN, load_sources
 from src.db import SessionLocal
 from src.clustering import cluster_articles
+from src.http import fetch_bytes
 from src.models import Article, InterestRun, Signal
 
 logger = logging.getLogger("ingest_interests")
@@ -248,9 +248,8 @@ def _ingest_google_autocomplete(seeds: list[str]) -> list[dict]:
         url = "https://www.google.com/complete/search?" + urllib.parse.urlencode({
             "client": "firefox", "q": seed, "hl": "it", "gl": "it",
         })
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read())
+        raw = fetch_bytes(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        data = json.loads(raw)
         suggestions = data[1] if len(data) > 1 else []
         for rank, suggestion in enumerate(suggestions):
             if suggestion.strip().lower() == seed.strip().lower():
