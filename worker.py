@@ -24,7 +24,7 @@ def main() -> int:
         logger.warning("Fonti fallite (%d): %s", len(summary["sources_failed"]), summary["sources_failed"])
     logger.info("Articoli nuovi ingeriti: %d", summary["articles_ingested"])
 
-    logger.info("Avvio ingest Apify (Parte 2)...")
+    logger.info("Avvio ingest interesse — Apify + Wikipedia (Parte 2)...")
     interest_summary = run_interest_ingest()
     logger.info("Fonti interesse OK (%d): %s", len(interest_summary["sources_ok"]), interest_summary["sources_ok"])
     if interest_summary["sources_failed"]:

@@ -1,4 +1,5 @@
-"""Ingest Parte 2 (Apify): Google Trends, Google SERP, TikTok, YouTube, X, Reddit.
+"""Ingest Parte 2: orchestratore di Google Trends/SERP, TikTok, YouTube, X, Reddit
+(via Apify), Google Autocomplete (pubblico) e Wikipedia (src/ingest_wikipedia.py).
 
 Stessa filosofia di src/ingest_rss.py: ogni fonte è indipendente, se una fallisce
 le altre proseguono, e la Run finale riporta chi ha risposto e chi no.
@@ -12,8 +13,11 @@ diretti, senza bisogno di seed.
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
+import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -215,30 +219,63 @@ def _ingest_reddit(cfg: dict) -> list[dict]:
     return rows
 
 
-def run_interest_ingest() -> dict:
-    """Esegue l'ingest di tutte le fonti Apify configurate. Ritorna {sources_ok, sources_failed, signals_ingested}."""
-    if not APIFY_TOKEN:
-        logger.info("APIFY_TOKEN non configurato: salto l'ingest Parte 2 (Apify).")
-        return {"sources_ok": [], "sources_failed": ["Apify (tutte le fonti) — APIFY_TOKEN non configurato"], "signals_ingested": 0}
+def _ingest_google_autocomplete(seeds: list[str]) -> list[dict]:
+    """Endpoint pubblico Google Suggest: nessun token richiesto."""
+    if not seeds:
+        return []
+    rows = []
+    now = datetime.now(timezone.utc)
+    for seed in seeds:
+        url = "https://www.google.com/complete/search?" + urllib.parse.urlencode({
+            "client": "firefox", "q": seed, "hl": "it", "gl": "it",
+        })
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        suggestions = data[1] if len(data) > 1 else []
+        for rank, suggestion in enumerate(suggestions):
+            if suggestion.strip().lower() == seed.strip().lower():
+                continue
+            rows.append({
+                "signal_source": "google_autocomplete", "keyword": suggestion[:512],
+                "metric": float(len(suggestions) - rank), "extra": {"seed": seed},
+                "fetched_at": now,
+            })
+    return rows
 
+
+def run_interest_ingest() -> dict:
+    """Esegue l'ingest di tutte le fonti di Parte 2 (Apify + Wikipedia).
+
+    Wikipedia è gratuita/senza token e viene eseguita comunque anche se APIFY_TOKEN
+    non è configurato: in quel caso le sole fonti Apify vengono riportate come fallite.
+    """
     session = SessionLocal()
     run = InterestRun()
     session.add(run)
     session.commit()
 
-    cfg = load_sources()["interests"]["apify"]["actors"]
     seeds = _get_seed_keywords()
+    tasks = [("google_autocomplete", lambda: _ingest_google_autocomplete(seeds))]
 
-    tasks = [
-        ("google_trends_daily", lambda: _ingest_google_trends_daily(cfg["google_trends"])),
-        ("google_serp", lambda: _ingest_google_serp(cfg["google_serp"], seeds)),
-        ("tiktok", lambda: _ingest_tiktok(cfg["tiktok_trending"], seeds)),
-        ("youtube", lambda: _ingest_youtube(cfg["youtube_trending"], seeds)),
-        ("x", lambda: _ingest_x(cfg["x_trending"], seeds)),
-        ("reddit", lambda: _ingest_reddit(cfg["reddit_rising"])),
-    ]
+    if APIFY_TOKEN:
+        cfg = load_sources()["interests"]["apify"]["actors"]
+        tasks += [
+            ("google_trends_daily", lambda: _ingest_google_trends_daily(cfg["google_trends"])),
+            ("google_serp", lambda: _ingest_google_serp(cfg["google_serp"], seeds)),
+            ("tiktok", lambda: _ingest_tiktok(cfg["tiktok_trending"], seeds)),
+            ("youtube", lambda: _ingest_youtube(cfg["youtube_trending"], seeds)),
+            ("x", lambda: _ingest_x(cfg["x_trending"], seeds)),
+            ("reddit", lambda: _ingest_reddit(cfg["reddit_rising"])),
+        ]
+    else:
+        logger.info("APIFY_TOKEN non configurato: salto le fonti Apify (Wikipedia/Autocomplete proseguono comunque).")
 
     sources_ok, sources_failed, total = [], [], 0
+
+    if not APIFY_TOKEN:
+        sources_failed.append("Apify (tutte le fonti) — APIFY_TOKEN non configurato")
+
     for name, task in tasks:
         try:
             rows = task()
@@ -248,6 +285,16 @@ def run_interest_ingest() -> dict:
         except Exception as e:
             logger.warning("Fonte interesse '%s' fallita: %s", name, e)
             sources_failed.append(f"{name} — {e}")
+
+    try:
+        from src.ingest_wikipedia import run_wikipedia_ingest
+        wiki_summary = run_wikipedia_ingest()
+        total += wiki_summary["signals_ingested"]
+        sources_ok += wiki_summary["sources_ok"]
+        sources_failed += wiki_summary["sources_failed"]
+    except Exception as e:
+        logger.warning("Fonte interesse 'wikipedia' fallita: %s", e)
+        sources_failed.append(f"wikipedia — {e}")
 
     run.finished_at = datetime.now(timezone.utc)
     run.sources_ok = sources_ok

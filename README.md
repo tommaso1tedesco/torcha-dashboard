@@ -6,11 +6,11 @@ volume), e (2) cosa cerca la gente online (**Rising score**).
 
 ## Stato del progetto
 
-**Fase 1-3 completate**: ingest RSS per tutte le 6 categorie, clustering TF-IDF sulla stessa
+**Fase 1-4 completate**: ingest RSS per tutte le 6 categorie, clustering TF-IDF sulla stessa
 storia, Heat score v0, dashboard Streamlit con pulsante "Aggiorna" e riga di stato fonti;
-integrazione Apify (Google Trends, Google SERP, TikTok, YouTube, X, Reddit) con Rising score
-v0 e pannello "Cosa cerca la gente". Wikipedia Pageviews (Fase 4) e lo scoring di velocità
-definitivo su baseline storica (Fase 5) sono i prossimi passi — vedi
+integrazione Apify (Google Trends, Google SERP, TikTok, YouTube, X, Reddit) + Google
+Autocomplete + Wikipedia Pageviews, con Rising score v0 e pannello "Cosa cerca la gente".
+Lo scoring di velocità definitivo su baseline storica (Fase 5) è il prossimo passo — vedi
 [prompt-dashboard-claude-code-v2.md](prompt-dashboard-claude-code-v2.md) per il piano completo.
 
 ## Struttura
@@ -27,7 +27,8 @@ src/
   ingest_rss.py         # Parte 1: fetch RSS + normalizzazione + upsert, retry e log fonti ok/failed
   clustering.py         # Parte 1: Heat score v0 (usa src/textsim.py per il raggruppamento)
   apify_client_wrapper.py  # chiamata sincrona a un Actor Apify (run + lettura dataset)
-  ingest_interests.py   # Parte 2: orchestrazione dei 6 Actor Apify, degradazione per-fonte
+  ingest_interests.py   # Parte 2: orchestrazione Apify + Google Autocomplete, degradazione per-fonte
+  ingest_wikipedia.py   # Parte 2: Wikipedia Pageviews API (top giornaliero + andamento settimanale)
   rising.py             # Parte 2: Rising score v0 (usa src/textsim.py per il raggruppamento)
   textsim.py            # TF-IDF + cosine similarity condiviso tra clustering.py e rising.py
 ```
@@ -83,7 +84,8 @@ railway run python3 -m src.init_db
   inventato). Nessuno di TikTok/YouTube/X offre un "trending now" pubblico senza login: sono
   alimentati con query "seed" (le storie più calde di Parte 1) e l'engagement di risposta è
   letto come segnale — un'approssimazione onesta, non un vero feed di trending. Google Trends
-  (mode "trending") e Reddit (sort "hot" sulle subreddit configurate) sono invece segnali diretti.
+  (mode "trending"), Reddit (sort "hot"), Google Autocomplete e Wikipedia sono invece segnali
+  diretti/ufficiali. Wikipedia e Autocomplete sono gratuiti e non richiedono `APIFY_TOKEN`.
 - Lo schema DB usa `Base.metadata.create_all` (niente Alembic per ora): le tabelle nuove si
   creano da sole, non serve alterare quelle esistenti. Da introdurre se/quando lo schema in
   produzione dovrà evolvere *modificando* (non solo aggiungendo) tabelle con dati da preservare.

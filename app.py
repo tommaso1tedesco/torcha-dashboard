@@ -122,7 +122,7 @@ st.header("🔎 Cosa cerca la gente")
 st.caption("Temi in salita per Rising score, con la fonte del segnale e le keyword correlate.")
 signals = get_recent_signals(DASHBOARD_WINDOW_HOURS)
 if not signals:
-    st.info("Nessun segnale di interesse nelle ultime ore. Premi 'Aggiorna' per raccoglierli (richiede APIFY_TOKEN).")
+    st.info("Nessun segnale di interesse nelle ultime ore. Premi 'Aggiorna' per raccoglierli (Wikipedia non richiede token; Google Trends/SERP/social richiedono APIFY_TOKEN).")
 else:
     themes = compute_rising_themes(signals)
     for t in themes[:20]:
