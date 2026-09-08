@@ -8,8 +8,20 @@ Trends / Product Hunt / Hacker News (rank numerato + badge + meta compatta).
 from __future__ import annotations
 
 import html
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import streamlit as st
+
+# Tutti i timestamp sono salvati in UTC (best practice per il DB); a schermo si
+# mostrano sempre convertiti al fuso italiano, con il cambio ora legale/solare
+# gestito automaticamente da zoneinfo (nessuna dipendenza esterna).
+ITALY_TZ = ZoneInfo("Europe/Rome")
+
+
+def format_local(dt: datetime, fmt: str = "%d/%m %H:%M") -> str:
+    return dt.astimezone(ITALY_TZ).strftime(fmt)
+
 
 # Etichette leggibili per le fonti di Parte 2: i nomi tecnici (es. "google_trends_daily")
 # non devono mai arrivare a schermo così come sono.

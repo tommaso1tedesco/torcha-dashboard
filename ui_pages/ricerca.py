@@ -1,4 +1,4 @@
-"""Pagina 'Cosa cerca la gente': temi in salita per Rising score (Parte 2)."""
+"""Pagina 'Interessi': temi in salita per Rising score (Parte 2)."""
 from __future__ import annotations
 
 import streamlit as st
@@ -11,7 +11,7 @@ from src.velocity import get_velocity_multipliers, lookup_velocity
 
 
 def render() -> None:
-    st.title("📈 Cosa cerca la gente")
+    st.title("📈 Interessi")
     st.caption(
         "Temi in salita nella domanda di ricerca online — Google Trends, ricerche correlate, "
         "TikTok, YouTube e Wikipedia, ordinati per Rising score."

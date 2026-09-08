@@ -12,7 +12,7 @@ from src.ingest_interests import run_interest_ingest
 from src.ingest_rss import run_ingest
 from src.init_db import init_db
 from src.models import InterestRun, Run
-from src.ui import inject_base_css
+from src.ui import format_local, inject_base_css
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -65,11 +65,11 @@ with st.sidebar:
 
     st.caption(
         "Ultimo aggiornamento notizie: "
-        + (last_run.started_at.strftime("%d/%m %H:%M UTC") if last_run else "mai")
+        + (format_local(last_run.started_at) if last_run else "mai")
     )
     st.caption(
         "Ultimo aggiornamento interesse: "
-        + (last_interest_run.started_at.strftime("%d/%m %H:%M UTC") if last_interest_run else "mai")
+        + (format_local(last_interest_run.started_at) if last_interest_run else "mai")
     )
 
     with st.expander("Stato fonti"):
@@ -101,7 +101,7 @@ def _ricerca_page() -> None:
 
 
 pages = [
-    st.Page(_notizie_page, title="Notizie calde", icon="🔥", default=True),
-    st.Page(_ricerca_page, title="Cosa cerca la gente", icon="📈"),
+    st.Page(_notizie_page, title="Notizie", icon="🔥", default=True),
+    st.Page(_ricerca_page, title="Interessi", icon="📈"),
 ]
 st.navigation(pages).run()
