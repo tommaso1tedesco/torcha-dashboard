@@ -207,10 +207,6 @@ categories:
   tecnologia:
     label: "Tecnologia"
     sources:
-      - name: "HDblog"
-        homepage: "https://www.hdblog.it"
-        via: rss
-        rss_url: "https://www.hdblog.it/rss/"                      # verificato 200 OK, <rss>
       - name: "DDay.it"
         homepage: "https://www.dday.it"
         via: rss
@@ -223,10 +219,6 @@ categories:
         homepage: "https://www.punto-informatico.it"
         via: rss
         rss_url: "https://www.punto-informatico.it/feed/"          # verificato 200 OK, <rss>
-      - name: "ANSA — Tecnologia"
-        homepage: "https://www.ansa.it/sito/notizie/tecnologia/tecnologia.html"
-        via: rss
-        rss_url: "https://www.ansa.it/canale_tecnologia/notizie/tecnologia_rss.xml"  # verificato 200 OK, contenuti freschi (il pattern /sito/notizie/... è morto per questa sezione, fermo al 2023)
       - name: "The Verge"
         homepage: "https://www.theverge.com"
         via: rss
@@ -242,6 +234,53 @@ categories:
         via: rss
         rss_url: "https://techcrunch.com/feed/"                    # verificato 200 OK, <rss>
         lang: en
+      - name: "MIT Technology Review"
+        homepage: "https://www.technologyreview.com"
+        via: rss
+        rss_url: "https://www.technologyreview.com/feed/"          # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
+      - name: "Wired US"
+        homepage: "https://www.wired.com"
+        via: rss
+        rss_url: "https://www.wired.com/feed/rss"                  # verificato 200 OK, <feed> (Atom), contenuti freschi
+        lang: en
+      - name: "Engadget"
+        homepage: "https://www.engadget.com"
+        via: rss
+        rss_url: "https://www.engadget.com/rss.xml"                # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
+      - name: "9to5Mac"
+        homepage: "https://9to5mac.com"
+        via: rss
+        rss_url: "https://9to5mac.com/feed/"                       # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
+      - name: "9to5Google"
+        homepage: "https://9to5google.com"
+        via: rss
+        rss_url: "https://9to5google.com/feed/"                    # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
+      - name: "ZDNet"
+        homepage: "https://www.zdnet.com"
+        via: rss
+        rss_url: "https://www.zdnet.com/rss/all/"                  # verificato 200 OK, <feed> (Atom); URL trovato via homepage (i pattern /news/rss.xml, /rss.xml, feedburner sono 404)
+        lang: en
+      - name: "VentureBeat AI"
+        homepage: "https://venturebeat.com/category/ai/"
+        via: apify            # /category/ai/feed/ risponde 429 (rate limit/bot protection), niente RSS pubblico utilizzabile
+        rss_url: ""
+        lang: en
+      - name: "AI4Business"
+        homepage: "https://www.ai4business.it"
+        via: rss
+        rss_url: "https://www.ai4business.it/feed/"                # verificato 200 OK, <rss>, contenuti freschi
+      - name: "Agenda Digitale"
+        homepage: "https://www.agendadigitale.eu"
+        via: rss
+        rss_url: "https://www.agendadigitale.eu/feed/"             # verificato 200 OK, <rss>, contenuti freschi
+      - name: "Startupitalia"
+        homepage: "https://startupitalia.eu"
+        via: rss
+        rss_url: "https://startupitalia.eu/feed/"                  # verificato 200 OK, <rss>, contenuti freschi
 
   curiosita:
     label: "Curiosità / Approfondimento"
