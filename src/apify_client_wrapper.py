@@ -43,9 +43,8 @@ def run_actor(actor_id: str, run_input: dict, max_items: int | None = None) -> l
     if run is None:
         raise RuntimeError(f"Actor {actor_id}: nessun run restituito (timeout?)")
 
-    status = run.get("status")
-    if status != "SUCCEEDED":
-        raise RuntimeError(f"Actor {actor_id}: run terminato con status {status}")
+    # In 3.x .call() ritorna un modello Pydantic (attributi snake_case), non un dict.
+    if run.status != "SUCCEEDED":
+        raise RuntimeError(f"Actor {actor_id}: run terminato con status {run.status}")
 
-    dataset_id = run["defaultDatasetId"]
-    return list(client.dataset(dataset_id).iterate_items())
+    return list(client.dataset(run.default_dataset_id).iterate_items())
