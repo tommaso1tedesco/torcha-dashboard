@@ -13,6 +13,13 @@ _CATEGORIES_CFG = load_sources()["categories"]
 CATEGORY_LABELS = {key: cat["label"] for key, cat in _CATEGORIES_CFG.items()}
 VIEW_ONLY_CATEGORIES = {key for key, cat in _CATEGORIES_CFG.items() if cat.get("view_only")}
 
+# Senza un tetto, categorie con fonti molto prolifiche (es. Bloomberg, ~75 notizie/giorno
+# di nicchia finanziaria in inglese, quasi tutte a fonte singola) affogano le storie
+# davvero cross-fonte in centinaia di card a bassa Heat score. Il tetto non nasconde
+# dati (restano tutti in "Tutti gli articoli"/DB), solo la lista mostrata in pagina —
+# coerente con il tetto già usato in "Cosa cerca la gente".
+MAX_STORIES_SHOWN = 40
+
 
 def render() -> None:
     st.title("🔥 Notizie calde")
@@ -36,8 +43,10 @@ def _render_category(category: str) -> None:
 
     if category in VIEW_ONLY_CATEGORIES:
         top_stats([("articoli", str(len(articles))), ("finestra", f"{DASHBOARD_WINDOW_HOURS}h")])
-        for a in articles:
+        for a in articles[:MAX_STORIES_SHOWN]:
             render_timeline_row(a.published_at.strftime("%d/%m %H:%M"), a.title, a.url, a.source)
+        if len(articles) > MAX_STORIES_SHOWN:
+            st.caption(f"Mostrati i {MAX_STORIES_SHOWN} più recenti su {len(articles)}.")
         return
 
     clusters = cluster_articles(articles)
@@ -53,8 +62,13 @@ def _render_category(category: str) -> None:
         ("articoli", str(len(articles))),
         ("finestra", f"{DASHBOARD_WINDOW_HOURS}h"),
     ])
+    if len(clusters) > MAX_STORIES_SHOWN:
+        st.caption(
+            f"Mostrate le {MAX_STORIES_SHOWN} storie più calde su {len(clusters)} — "
+            "le altre hanno una sola fonte e Heat score basso."
+        )
 
-    for rank, c in enumerate(clusters, start=1):
+    for rank, c in enumerate(clusters[:MAX_STORIES_SHOWN], start=1):
         is_rising = c.is_new or c.velocity > 1.2
         top_article = c.articles[0]
         render_heat_card(
