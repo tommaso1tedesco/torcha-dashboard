@@ -5,6 +5,7 @@ import logging
 
 import streamlit as st
 from sqlalchemy import select
+from streamlit_autorefresh import st_autorefresh
 
 from src.db import SessionLocal
 from src.ingest_interests import run_interest_ingest
@@ -18,6 +19,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 st.set_page_config(page_title="Torcha", page_icon="🔥", layout="wide")
 init_db()
 inject_base_css()
+
+# La pagina non si aggiorna da sola: senza questo, chi la lascia aperta vede dati
+# vecchi anche se il worker in background ha già ingerito notizie più recenti.
+# Rilegge solo il DB (nessuna nuova chiamata RSS/Apify) ogni 5 minuti.
+st_autorefresh(interval=5 * 60 * 1000, key="autorefresh")
 
 
 def get_last_run() -> Run | None:
