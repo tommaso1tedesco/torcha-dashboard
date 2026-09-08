@@ -42,10 +42,17 @@ class InterestRun(Base):
 
 
 class Article(Base):
-    """Articolo normalizzato: titolo, fonte, categoria, url, timestamp, lingua."""
+    """Articolo normalizzato: titolo, fonte, categoria, url, timestamp, lingua.
+
+    Univoco per (url, category) e non per url da sola: lo stesso articolo può
+    comparire sia nella sua categoria tematica (es. Sky TG24 in "attualita") sia
+    nella vista "ultima_ora" quando quest'ultima riusa lo stesso feed — altrimenti
+    la seconda riga viene scartata in silenzio come falso duplicato (bug reale,
+    scoperto dal vivo aggiungendo Sky TG24/Rai News a "Ultima ora").
+    """
 
     __tablename__ = "articles"
-    __table_args__ = (UniqueConstraint("url", name="uq_articles_url"),)
+    __table_args__ = (UniqueConstraint("url", "category", name="uq_articles_url_category"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(1024))

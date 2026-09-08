@@ -102,7 +102,7 @@ def run_ingest(categories: list[str] | None = None) -> dict:
 
                 for row in rows:
                     row["first_seen_run_id"] = run.id
-                stmt = pg_insert(Article).values(rows).on_conflict_do_nothing(index_elements=["url"])
+                stmt = pg_insert(Article).values(rows).on_conflict_do_nothing(index_elements=["url", "category"])
                 result = session.execute(stmt)
                 total_new += result.rowcount or 0
                 sources_ok.append(label)
