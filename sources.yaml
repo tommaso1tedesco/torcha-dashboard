@@ -14,8 +14,10 @@
 settings:
   geo: IT
   lang: it
-  # frequenza del worker cron (minuti). Partire alti per contenere i costi Apify.
-  refresh_minutes: 45
+  # frequenza del worker cron (minuti): governa solo l'ingest RSS/Wikipedia/Autocomplete
+  # (gratuiti). Le fonti Apify a pagamento hanno il proprio limite indipendente
+  # (APIFY_MIN_INTERVAL_HOURS in src/ingest_interests.py, 12h) e non seguono questo valore.
+  refresh_minutes: 30
 
 # =====================================================================
 # PARTE 1 — NOTIZIE CALDE, DIVISE PER CATEGORIA

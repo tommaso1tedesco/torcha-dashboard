@@ -62,9 +62,11 @@ Tre servizi nello stesso progetto Railway, tutti collegati allo stesso repo GitH
    ```
    python3 worker.py
    ```
-   Su Railway: Settings → Cron Schedule, impostato a `*/45 * * * *` (ogni 45 minuti,
-   coerente con `settings.refresh_minutes` in `sources.yaml`). Più run ci sono, più
-   affidabile diventa la baseline storica della Fase 5.
+   Su Railway: Settings → Cron Schedule, impostato a `*/30 * * * *` (ogni 30 minuti,
+   coerente con `settings.refresh_minutes` in `sources.yaml`) — governa solo RSS/Wikipedia/
+   Autocomplete (gratuiti); le fonti Apify hanno il proprio limite indipendente di 12h
+   (vedi sezione Costi). Più run ci sono, più affidabile diventa la baseline storica
+   della Fase 5.
 
 Variabili d'ambiente da impostare su **entrambi** i servizi (web e worker), vedi `.env.example`:
 - `DATABASE_URL` — reference alla variabile del servizio Postgres
@@ -80,10 +82,11 @@ railway run python3 -m src.init_db
 
 ## Costi e controllo spesa
 
-RSS, Wikipedia Pageviews e Google Autocomplete sono gratuiti. Apify (Google Trends,
-SERP, TikTok, YouTube) è a pagamento e, misurato dal vivo a piena potenza e alla
-cadenza del worker (ogni 45 min), costerebbe **oltre $1.000/mese**. Per restare
-sotto ~€15-17/mese di spesa Apify (+ ~$5/mese Railway):
+RSS, Wikipedia Pageviews e Google Autocomplete sono gratuiti e girano ad ogni ciclo del
+worker (`refresh_minutes`, oggi 30 min) senza impatto sui costi. Apify (Google Trends,
+SERP, TikTok, YouTube) è a pagamento e, misurato dal vivo a piena potenza e alla stessa
+cadenza del worker, costerebbe **oltre $1.000/mese**. Per restare sotto ~€15-17/mese di
+spesa Apify (+ ~$5/mese Railway), le fonti Apify seguono un limite indipendente:
 
 - Le fonti Apify girano al più **una volta ogni 12 ore** (`APIFY_MIN_INTERVAL_HOURS`
   in `src/ingest_interests.py`), indipendentemente da quante volte il worker o il
