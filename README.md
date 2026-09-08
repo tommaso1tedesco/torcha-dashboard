@@ -78,6 +78,27 @@ Al primo deploy, lanciare una volta la creazione schema:
 railway run python3 -m src.init_db
 ```
 
+## Costi e controllo spesa
+
+RSS, Wikipedia Pageviews e Google Autocomplete sono gratuiti. Apify (Google Trends,
+SERP, TikTok, YouTube) è a pagamento e, misurato dal vivo a piena potenza e alla
+cadenza del worker (ogni 45 min), costerebbe **oltre $1.000/mese**. Per restare
+sotto ~€15-17/mese di spesa Apify (+ ~$5/mese Railway):
+
+- Le fonti Apify girano al più **una volta ogni 12 ore** (`APIFY_MIN_INTERVAL_HOURS`
+  in `src/ingest_interests.py`), indipendentemente da quante volte il worker o il
+  pulsante "Aggiorna" chiamano `run_interest_ingest()` — RSS/Wikipedia/Autocomplete
+  restano invece gratuiti e girano ad ogni ciclo.
+- Volumi ridotti per SERP/TikTok/YouTube (`SERP_SEED_COUNT`, `TIKTOK_SEED_COUNT`,
+  `YOUTUBE_SEED_COUNT` in `src/ingest_interests.py`; `resultsPerPage`/`maxResults`
+  in `sources.yaml`).
+- Reddit e X sono escluse dal ciclo automatico (le fonti più costose/meno affidabili
+  per il segnale che davano): le funzioni restano nel codice per un uso manuale.
+
+Con questa configurazione la spesa Apify stimata è ~$11-12/mese (2 cicli/giorno).
+Per alzarla o abbassarla ulteriormente, agire su `APIFY_MIN_INTERVAL_HOURS` e sui
+volumi seed citati sopra.
+
 ## Note tecniche
 
 - Le fonti RSS sono verificate dal vivo (vedi commenti in `sources.yaml`): alcune (Fanpage,

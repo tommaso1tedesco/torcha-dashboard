@@ -244,6 +244,16 @@ interests:
     # tre usiamo hashtag/query "seed": i temi più caldi da Parte 1 (Heat score) + qualche
     # hashtag generalista IT, e leggiamo il volume/engagement di risposta come segnale di
     # interesse — è un'approssimazione onesta, non un vero feed "cosa sta esplodendo ora".
+    #
+    # CONTROLLO COSTI (misurato dal vivo con un ciclo completo a token reale: TikTok
+    # $0,56/run, Reddit $0,2-0,28, YouTube $0,20, SERP $0,03, Trends $0,02): a piena
+    # potenza e alla cadenza del worker (ogni 45 min) si superano i $1.000/mese. Per
+    # restare sotto ~€15/mese di spesa Apify, src/ingest_interests.py applica due leve
+    # (non modificabili qui): esegue le fonti Apify al più una volta ogni
+    # APIFY_MIN_INTERVAL_HOURS=12h (Wikipedia/Autocomplete restano gratis e girano
+    # sempre), e usa meno seed per SERP/TikTok/YouTube di quanti sources.yaml ne generi
+    # (SERP_SEED_COUNT=3, TIKTOK_SEED_COUNT=2, YOUTUBE_SEED_COUNT=2). Reddit e X sono
+    # escluse dal ciclo automatico (i più cari o meno affidabili per il segnale dato).
     actors:
       # ID e schema di input verificati dal vivo sull'Apify Store (pagina Input di ogni Actor).
       google_trends:
@@ -259,23 +269,28 @@ interests:
       tiktok_trending:
         actor_id: "clockworks/tiktok-scraper"   # ufficiale Apify (Clockworks), 272K utenti
         # niente "for you" pubblico: approssimiamo il trending con hashtag seed (temi hot + hashtag generalisti IT)
-        input: { resultsPerPage: 30, videoSearchSorting: "MOST_RELEVANT", videoSearchDateFilter: "ALL_TIME" }
+        # resultsPerPage ridotto da 30 a 15 per controllo costi (era $0,56/run con 30×5 seed)
+        input: { resultsPerPage: 15, videoSearchSorting: "MOST_RELEVANT", videoSearchDateFilter: "ALL_TIME" }
       youtube_trending:
         actor_id: "streamers/youtube-scraper"   # ufficiale Apify (Streamers), 111K utenti
         # niente endpoint "trending" diretto: approssimiamo con ricerca per parola chiave (seed) filtrata su "oggi"
-        input: { maxResults: 10, dateFilter: "today", sortingOrder: "relevance" }
+        # maxResults ridotto da 10 a 5 per controllo costi
+        input: { maxResults: 5, dateFilter: "today", sortingOrder: "relevance" }
       x_trending:
         actor_id: "apidojo/tweet-scraper"   # 98K utenti; niente "Trends for you" pubblico senza login: approssimiamo con searchTerms (seed) + sort Top
         # ATTENZIONE (verificato dal vivo, 07/09/2026): l'Actor risponde SUCCEEDED ma
         # ritorna solo {"noResults": true} anche per query molto comuni (es. "from:elonmusk").
-        # Probabile degradazione lato X/anti-scraping più che bug nostro: il codice gestisce
-        # il caso senza crash (0 segnali), ma il segnale "x" è di fatto inattivo per ora.
+        # Probabile degradazione lato X/anti-scraping più che bug nostro. ESCLUSA dal
+        # ciclo automatico per controllo costi (vedi nota sopra): la funzione resta
+        # disponibile in src/ingest_interests.py per un uso manuale.
         input: { maxItems: 50, sort: "Top", tweetLanguage: "it" }
       reddit_rising:
         actor_id: "trudax/reddit-scraper-lite"   # 41K utenti, 4.6 — sort "hot" sulle community indicate
         # verificato dal vivo: serve l'URL .../hot/ (la sola root subreddit ritorna i metadati
         # della community, non i post); la variante "Lite" non include voti/punteggio, quindi
-        # il codice usa il rank di posizione (ordine "hot") come metrica v0.
+        # il codice usa il rank di posizione (ordine "hot") come metrica v0. ESCLUSA dal
+        # ciclo automatico per controllo costi (era la fonte più cara/lenta, $0,2-0,28/run,
+        # spesso in timeout): la funzione resta disponibile per un uso manuale.
         input: { searchPosts: true, sort: "hot", maxPostCount: 20 }
         subreddits: ["italy", "news", "worldnews"]
 

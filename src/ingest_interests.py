@@ -1,15 +1,18 @@
-"""Ingest Parte 2: orchestratore di Google Trends/SERP, TikTok, YouTube, X, Reddit
-(via Apify), Google Autocomplete (pubblico) e Wikipedia (src/ingest_wikipedia.py).
+"""Ingest Parte 2: orchestratore di Google Trends/SERP/TikTok/YouTube (via Apify),
+Google Autocomplete (pubblico) e Wikipedia (src/ingest_wikipedia.py).
 
 Stessa filosofia di src/ingest_rss.py: ogni fonte è indipendente, se una fallisce
 le altre proseguono, e la Run finale riporta chi ha risposto e chi no.
 
-Nota su TikTok/YouTube/X: nessuno di questi offre un "trending now" pubblico senza
+Nota su TikTok/YouTube: nessuno dei due offre un "trending now" pubblico senza
 login. Li alimentiamo con query/hashtag "seed" (i temi più caldi da Parte 1, Heat
 score) e leggiamo l'engagement di risposta come segnale di interesse — è una
 approssimazione onesta, non un vero feed di trending. Google Trends (mode:
-trending) e Reddit (sort: hot sulle subreddit configurate) sono invece segnali
-diretti, senza bisogno di seed.
+trending) è invece un segnale diretto, senza bisogno di seed.
+
+Reddit e X sono escluse dal ciclo automatico per controllo costi/affidabilità
+(vedi APIFY_MIN_INTERVAL_HOURS più sotto e i commenti in sources.yaml), ma le
+funzioni _ingest_reddit/_ingest_x restano disponibili per un uso manuale.
 """
 from __future__ import annotations
 
@@ -32,6 +35,20 @@ logger = logging.getLogger("ingest_interests")
 
 SEED_TOPICS_COUNT = 5
 SEED_LOOKBACK_HOURS = 24
+
+# Controllo costi: le fonti RSS/Wikipedia/Autocomplete sono gratuite e girano ad ogni
+# ciclo (ogni 45 min, vedi worker.py); le fonti Apify a pagamento no — girano al più
+# una volta ogni APIFY_MIN_INTERVAL_HOURS, indipendentemente da quante volte viene
+# chiamato run_interest_ingest() (sia da cron che dal pulsante Aggiorna). Con i volumi
+# ridotti sotto, tenersi sotto ~€15/mese di spesa Apify richiede questo intervallo.
+APIFY_MIN_INTERVAL_HOURS = 12
+_APIFY_PAID_SIGNAL_SOURCES = ("google_trends_daily", "google_serp", "tiktok", "youtube")
+
+# Volumi seed per fonte, ridotti rispetto al default per contenere i costi Apify
+# (TikTok e YouTube sono le fonti più care per risultato, vedi sources.yaml).
+SERP_SEED_COUNT = 3
+TIKTOK_SEED_COUNT = 2
+YOUTUBE_SEED_COUNT = 2
 
 # Nomi di campo candidati per l'attribuzione keyword->item, in ordine di preferenza.
 # Verificati dal vivo sugli Actor reali: "input" (TikTok, YouTube) e "searchHashtag"
@@ -153,7 +170,7 @@ def _ingest_tiktok(cfg: dict, seeds: list[str]) -> list[dict]:
     if not seeds:
         return []
     hashtags = [re.sub(r"[^a-zA-Z0-9]", "", s.split()[0]) for s in seeds if s.split()]
-    hashtags = [h for h in hashtags if h][:SEED_TOPICS_COUNT]
+    hashtags = [h for h in hashtags if h]
     if not hashtags:
         return []
     result = run_actor(cfg["actor_id"], {**cfg["input"], "hashtags": hashtags})
@@ -262,11 +279,32 @@ def _ingest_google_autocomplete(seeds: list[str]) -> list[dict]:
     return rows
 
 
+def _hours_since_last_apify_run() -> float | None:
+    """None se non è mai girata; altrimenti ore trascorse dall'ultimo segnale Apify a pagamento."""
+    session = SessionLocal()
+    try:
+        stmt = (
+            select(Signal.fetched_at)
+            .where(Signal.signal_source.in_(_APIFY_PAID_SIGNAL_SOURCES))
+            .order_by(Signal.fetched_at.desc())
+            .limit(1)
+        )
+        last = session.execute(stmt).scalar()
+    finally:
+        session.close()
+    if last is None:
+        return None
+    return (datetime.now(timezone.utc) - last).total_seconds() / 3600.0
+
+
 def run_interest_ingest() -> dict:
     """Esegue l'ingest di tutte le fonti di Parte 2 (Apify + Wikipedia).
 
-    Wikipedia è gratuita/senza token e viene eseguita comunque anche se APIFY_TOKEN
-    non è configurato: in quel caso le sole fonti Apify vengono riportate come fallite.
+    Wikipedia/Autocomplete sono gratuite e girano sempre. Le fonti Apify a pagamento
+    girano al più ogni APIFY_MIN_INTERVAL_HOURS per contenere i costi (vedi commento
+    sulla costante) — indipendentemente da quante volte questa funzione viene chiamata.
+    Reddit e X sono escluse dal ciclo automatico (le più costose/meno affidabili per
+    il segnale che danno); restano disponibili come funzioni per un uso manuale futuro.
     """
     session = SessionLocal()
     run = InterestRun()
@@ -276,23 +314,29 @@ def run_interest_ingest() -> dict:
     seeds = _get_seed_keywords()
     tasks = [("google_autocomplete", lambda: _ingest_google_autocomplete(seeds))]
 
-    if APIFY_TOKEN:
-        cfg = load_sources()["interests"]["apify"]["actors"]
-        tasks += [
-            ("google_trends_daily", lambda: _ingest_google_trends_daily(cfg["google_trends"])),
-            ("google_serp", lambda: _ingest_google_serp(cfg["google_serp"], seeds)),
-            ("tiktok", lambda: _ingest_tiktok(cfg["tiktok_trending"], seeds)),
-            ("youtube", lambda: _ingest_youtube(cfg["youtube_trending"], seeds)),
-            ("x", lambda: _ingest_x(cfg["x_trending"], seeds)),
-            ("reddit", lambda: _ingest_reddit(cfg["reddit_rising"])),
-        ]
-    else:
-        logger.info("APIFY_TOKEN non configurato: salto le fonti Apify (Wikipedia/Autocomplete proseguono comunque).")
-
     sources_ok, sources_failed, total = [], [], 0
 
     if not APIFY_TOKEN:
         sources_failed.append("Apify (tutte le fonti) — APIFY_TOKEN non configurato")
+    else:
+        hours_since = _hours_since_last_apify_run()
+        if hours_since is not None and hours_since < APIFY_MIN_INTERVAL_HOURS:
+            logger.info(
+                "Fonti Apify saltate per contenere i costi: ultima run %.1fh fa (minimo %dh).",
+                hours_since, APIFY_MIN_INTERVAL_HOURS,
+            )
+            sources_failed.append(
+                f"Apify (tutte le fonti) — saltate per controllo costi, prossima tra "
+                f"{APIFY_MIN_INTERVAL_HOURS - hours_since:.1f}h"
+            )
+        else:
+            cfg = load_sources()["interests"]["apify"]["actors"]
+            tasks += [
+                ("google_trends_daily", lambda: _ingest_google_trends_daily(cfg["google_trends"])),
+                ("google_serp", lambda: _ingest_google_serp(cfg["google_serp"], seeds[:SERP_SEED_COUNT])),
+                ("tiktok", lambda: _ingest_tiktok(cfg["tiktok_trending"], seeds[:TIKTOK_SEED_COUNT])),
+                ("youtube", lambda: _ingest_youtube(cfg["youtube_trending"], seeds[:YOUTUBE_SEED_COUNT])),
+            ]
 
     for name, task in tasks:
         logger.info("Avvio fonte interesse '%s'...", name)
