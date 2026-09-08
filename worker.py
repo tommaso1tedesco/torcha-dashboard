@@ -1,7 +1,7 @@
 """Entrypoint del worker cron: una singola esecuzione di ingest, poi esce.
 
 Su Railway questo script è il "Start Command" del servizio worker, schedulato
-con un Cron Schedule (es. ogni 45 minuti, vedi sources.yaml -> settings.refresh_minutes).
+con un Cron Schedule (ogni 30 minuti, vedi sources.yaml -> settings.refresh_minutes).
 """
 import logging
 import sys
