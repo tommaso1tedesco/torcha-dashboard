@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import urllib.error
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from statistics import mean
 
@@ -55,9 +56,12 @@ def _fetch_top_daily(project: str) -> list[tuple[str, int]]:
 def _fetch_article_history(project: str, title: str) -> list[int]:
     end = datetime.now(timezone.utc) - timedelta(days=1)
     start = end - timedelta(days=TREND_LOOKBACK_DAYS - 1)
+    # titoli con caratteri non-ASCII (es. "Alternative_für_Deutschland") vanno percent-encoded,
+    # altrimenti urllib fallisce a costruire la richiesta HTTP (scoperto dal vivo).
+    encoded_title = urllib.parse.quote(title, safe="")
     url = (
         f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/all-access/user/"
-        f"{title}/daily/{start.strftime('%Y%m%d')}/{end.strftime('%Y%m%d')}"
+        f"{encoded_title}/daily/{start.strftime('%Y%m%d')}/{end.strftime('%Y%m%d')}"
     )
     data = _get(url)
     return [item["views"] for item in data["items"]]
