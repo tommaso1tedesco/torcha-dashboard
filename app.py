@@ -1,6 +1,8 @@
 """Dashboard Streamlit: notizie calde per categoria, clusterizzate per Heat score."""
 from __future__ import annotations
 
+import logging
+
 import streamlit as st
 from sqlalchemy import select
 
@@ -14,6 +16,8 @@ from src.models import InterestRun, Run
 from src.queries import get_recent_articles, get_recent_signals
 from src.rising import compute_rising_themes
 from src.velocity import get_velocity_multipliers, lookup_velocity
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 st.set_page_config(page_title="Torcha — Notizie calde", layout="wide")
 init_db()

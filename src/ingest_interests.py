@@ -295,6 +295,7 @@ def run_interest_ingest() -> dict:
         sources_failed.append("Apify (tutte le fonti) — APIFY_TOKEN non configurato")
 
     for name, task in tasks:
+        logger.info("Avvio fonte interesse '%s'...", name)
         try:
             rows = task()
             _save_signals(rows)

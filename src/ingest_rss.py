@@ -89,6 +89,7 @@ def run_ingest(categories: list[str] | None = None) -> dict:
                     sources_failed.append(f"{label} — non disponibile via RSS (via={src.get('via')})")
                     continue
 
+                logger.info("Fetching %s...", label)
                 parsed = _fetch_feed(src["rss_url"])
                 if parsed is None:
                     sources_failed.append(f"{label} — fetch/parse fallito")
