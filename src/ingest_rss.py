@@ -47,7 +47,7 @@ def _entry_published_at(entry) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _normalize_entries(parsed: feedparser.FeedParserDict, source_name: str, category: str) -> list[dict]:
+def _normalize_entries(parsed: feedparser.FeedParserDict, source_name: str, category: str, lang: str = "it") -> list[dict]:
     rows = []
     for entry in parsed.entries:
         url = getattr(entry, "link", None)
@@ -60,7 +60,7 @@ def _normalize_entries(parsed: feedparser.FeedParserDict, source_name: str, cate
             "category": category,
             "url": url.strip(),
             "published_at": _entry_published_at(entry),
-            "lang": "it",
+            "lang": lang,
         })
     return rows
 
@@ -95,7 +95,7 @@ def run_ingest(categories: list[str] | None = None) -> dict:
                     sources_failed.append(f"{label} — fetch/parse fallito")
                     continue
 
-                rows = _normalize_entries(parsed, src["name"], category)
+                rows = _normalize_entries(parsed, src["name"], category, lang=src.get("lang", "it"))
                 if not rows:
                     sources_failed.append(f"{label} — feed raggiunto ma 0 articoli estratti")
                     continue

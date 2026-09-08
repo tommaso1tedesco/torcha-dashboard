@@ -59,19 +59,24 @@ categories:
         homepage: "https://www.reuters.com"
         via: apify            # Reuters ha dismesso i feed RSS pubblici nel 2020, nessuna alternativa ufficiale
         rss_url: ""
+        lang: en
       - name: "Associated Press"
         homepage: "https://apnews.com"
         via: apify            # nessun feed RSS pubblico stabile (endpoint hub restituisce HTML, non XML)
         rss_url: ""
+        lang: en
       - name: "AFP"
         homepage: "https://www.afp.com"
         via: apify            # AFP non pubblica feed RSS diretti (sindacazione solo tramite partner)
         rss_url: ""
+        lang: en
 
   ultima_ora:
     label: "Ultima ora"
     # NON sono fonti nuove: è la vista "più recenti per orario" sulle generaliste.
-    # Usare i feed "Ultima Ora" dedicati dove esistono; ordinare per timestamp.
+    # Usare i feed "Ultima Ora" dedicati dove esistono, o il feed generale se molto
+    # frequente (Sky TG24, Rai News); ordinare per timestamp. Include anche un paio
+    # di fonti internazionali per il breaking news globale (in inglese).
     view_only: true
     sources:
       - name: "ANSA — Ultima Ora"
@@ -82,6 +87,29 @@ categories:
         homepage: "https://www.adnkronos.com"
         via: rss
         rss_url: "https://www.adnkronos.com/RSS_Ultimora.xml"      # verificato 200 OK, <rss>
+      - name: "Sky TG24"
+        homepage: "https://tg24.sky.it"
+        via: rss
+        rss_url: "https://tg24.sky.it/rss/tg24.xml"                # verificato 200 OK, flusso continuo (ultimo item alle 10:33 del giorno della verifica)
+      - name: "Rai News"
+        homepage: "https://www.rainews.it"
+        via: rss
+        rss_url: "https://www.rainews.it/rss/tutti"                # verificato 200 OK, aggiornamento continuo (ultimo item alle 09:12)
+      - name: "BBC News"
+        homepage: "https://www.bbc.com/news"
+        via: rss
+        rss_url: "http://feeds.bbci.co.uk/news/rss.xml"             # verificato 200 OK, <rss> (ultimo item 06:58)
+        lang: en
+      - name: "The Guardian"
+        homepage: "https://www.theguardian.com/world"
+        via: rss
+        rss_url: "https://www.theguardian.com/world/rss"            # verificato 200 OK, <rss> (ultimo item 09:20)
+        lang: en
+      - name: "Al Jazeera"
+        homepage: "https://www.aljazeera.com"
+        via: rss
+        rss_url: "https://www.aljazeera.com/xml/rss/all.xml"        # verificato 200 OK, <rss> (ultimo item 08:42)
+        lang: en
 
   economia:
     label: "Economia"
@@ -111,20 +139,24 @@ categories:
         via: rss
         rss_url: "https://www.economist.com/finance-and-economics/rss.xml"  # verificato 200 OK, <rss> (solo titolo+abstract, coerente con paywall)
         paywall: true
+        lang: en
       - name: "Financial Times"
         homepage: "https://www.ft.com"
         via: rss
         rss_url: "https://www.ft.com/rss/home"                      # verificato 200 OK, <rss>
         paywall: true
+        lang: en
       - name: "Bloomberg"
         homepage: "https://www.bloomberg.com"
         via: rss
         rss_url: "https://feeds.bloomberg.com/markets/news.rss"     # verificato 200 OK, <rss>
         paywall: true
+        lang: en
       - name: "Reuters — Business"
         homepage: "https://www.reuters.com/business"
         via: apify            # come Reuters generale: feed RSS pubblici dismessi (401 sull'endpoint rss)
         rss_url: ""
+        lang: en
 
   politica:
     label: "Politica"
@@ -170,6 +202,7 @@ categories:
         homepage: "https://www.politico.eu"
         via: rss
         rss_url: "https://www.politico.eu/feed/"                    # verificato 200 OK, <rss>
+        lang: en
 
   tecnologia:
     label: "Tecnologia"
@@ -198,14 +231,17 @@ categories:
         homepage: "https://www.theverge.com"
         via: rss
         rss_url: "https://www.theverge.com/rss/index.xml"          # verificato 200 OK, <feed> (Atom)
+        lang: en
       - name: "Ars Technica"
         homepage: "https://arstechnica.com"
         via: rss
         rss_url: "https://feeds.arstechnica.com/arstechnica/index" # verificato 200 OK, <rss>
+        lang: en
       - name: "TechCrunch"
         homepage: "https://techcrunch.com"
         via: rss
         rss_url: "https://techcrunch.com/feed/"                    # verificato 200 OK, <rss>
+        lang: en
 
   curiosita:
     label: "Curiosità / Approfondimento"
@@ -222,15 +258,18 @@ categories:
         homepage: "https://www.vox.com"
         via: rss
         rss_url: "https://www.vox.com/rss/index.xml"                # verificato 200 OK, <feed> (Atom)
+        lang: en
       - name: "The Atlantic"
         homepage: "https://www.theatlantic.com"
         via: rss
         rss_url: "https://www.theatlantic.com/feed/all/"            # verificato 200 OK, <feed> (Atom)
         paywall: true
+        lang: en
       - name: "BBC Future"
         homepage: "https://www.bbc.com/future"
         via: rss
         rss_url: "https://www.bbc.com/future/feed.rss"              # verificato 200 OK, <rss>
+        lang: en
 
 # =====================================================================
 # PARTE 2 — COSA CERCANO LE PERSONE (domanda di ricerca / interesse)
