@@ -289,6 +289,14 @@ categories:
         homepage: "https://www.internazionale.it"
         via: rss
         rss_url: "https://www.internazionale.it/sitemaps/rss.xml"   # verificato 200 OK, <rss>
+      - name: "Rivista Studio"
+        homepage: "https://www.rivistastudio.com"
+        via: rss
+        rss_url: "https://www.rivistastudio.com/feed/"              # verificato 200 OK, <rss>, contenuti freschi
+      - name: "Panorama"
+        homepage: "https://www.panorama.it"
+        via: rss
+        rss_url: "https://www.panorama.it/feed"                     # verificato 200 OK, <rss>, contenuti freschi
       - name: "Vox"
         homepage: "https://www.vox.com"
         via: rss
