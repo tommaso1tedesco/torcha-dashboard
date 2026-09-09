@@ -285,10 +285,6 @@ categories:
   curiosita:
     label: "Curiosità / Approfondimento"
     sources:
-      - name: "Il Post"
-        homepage: "https://www.ilpost.it"
-        via: apify            # /feed/ risponde 403 (bot protection), niente RSS pubblico utilizzabile
-        rss_url: ""
       - name: "Internazionale"
         homepage: "https://www.internazionale.it"
         via: rss
@@ -308,6 +304,27 @@ categories:
         homepage: "https://www.bbc.com/future"
         via: rss
         rss_url: "https://www.bbc.com/future/feed.rss"              # verificato 200 OK, <rss>
+      - name: "The Economist"
+        homepage: "https://www.economist.com"
+        via: rss
+        rss_url: "https://www.economist.com/latest/rss.xml"         # verificato 200 OK, <rss>, contenuti freschi
+        paywall: true
+        lang: en
+      - name: "The New Yorker"
+        homepage: "https://www.newyorker.com"
+        via: rss
+        rss_url: "https://www.newyorker.com/feed/everything"        # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
+      - name: "Smithsonian Magazine"
+        homepage: "https://www.smithsonianmag.com"
+        via: rss
+        rss_url: "https://www.smithsonianmag.com/rss/latest_articles/"  # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
+      - name: "Aeon"
+        homepage: "https://aeon.co"
+        via: rss
+        rss_url: "https://aeon.co/feed.rss"                         # verificato 200 OK, <rss>, contenuti freschi
+        lang: en
         lang: en
 
 # =====================================================================
