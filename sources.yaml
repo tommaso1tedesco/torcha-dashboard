@@ -35,10 +35,6 @@ categories:
         homepage: "https://tg24.sky.it"
         via: rss
         rss_url: "https://tg24.sky.it/rss/tg24.xml"                # verificato 200 OK, <rss>
-      - name: "TGCom24"
-        homepage: "https://www.tgcom24.mediaset.it"
-        via: apify           # unico feed noto (rss/tgcom24.xml) è morto (contenuti fermi a mesi fa), nessuna alternativa trovata
-        rss_url: ""
       - name: "Rai News"
         homepage: "https://www.rainews.it"
         via: rss
@@ -47,29 +43,10 @@ categories:
         homepage: "https://www.adnkronos.com"
         via: rss
         rss_url: "https://www.adnkronos.com/RSS_PrimaPagina.xml"   # verificato 200 OK, <rss> (feed "Prima Pagina")
-      - name: "Fanpage"
-        homepage: "https://www.fanpage.it"
-        via: apify           # feed /feed/ risponde 403 (bot protection Akamai) - niente RSS pubblico utilizzabile
-        rss_url: ""
       - name: "Open"
         homepage: "https://www.open.online"
         via: rss
         rss_url: "https://www.open.online/feed/"                   # verificato 200 OK, <rss>
-      - name: "Reuters"
-        homepage: "https://www.reuters.com"
-        via: apify            # Reuters ha dismesso i feed RSS pubblici nel 2020, nessuna alternativa ufficiale
-        rss_url: ""
-        lang: en
-      - name: "Associated Press"
-        homepage: "https://apnews.com"
-        via: apify            # nessun feed RSS pubblico stabile (endpoint hub restituisce HTML, non XML)
-        rss_url: ""
-        lang: en
-      - name: "AFP"
-        homepage: "https://www.afp.com"
-        via: apify            # AFP non pubblica feed RSS diretti (sindacazione solo tramite partner)
-        rss_url: ""
-        lang: en
 
   ultima_ora:
     label: "Ultima ora"
@@ -118,10 +95,6 @@ categories:
         homepage: "https://www.ilsole24ore.com"
         via: rss
         rss_url: "https://www.ilsole24ore.com/rss/economia.xml"     # verificato 200 OK, <rss>
-      - name: "Milano Finanza (MF)"
-        homepage: "https://www.milanofinanza.it"
-        via: apify           # nessun feed RSS pubblico trovato (homepage senza link rss, percorsi comuni 404)
-        rss_url: ""
       - name: "ANSA — Economia"
         homepage: "https://www.ansa.it/sito/notizie/economia/economia.html"
         via: rss
@@ -152,12 +125,6 @@ categories:
         rss_url: "https://feeds.bloomberg.com/markets/news.rss"     # verificato 200 OK, <rss>
         paywall: true
         lang: en
-      - name: "Reuters — Business"
-        homepage: "https://www.reuters.com/business"
-        via: apify            # come Reuters generale: feed RSS pubblici dismessi (401 sull'endpoint rss)
-        rss_url: ""
-        lang: en
-
   politica:
     label: "Politica"
     # Mix volutamente di orientamenti diversi per un quadro equilibrato.
@@ -182,14 +149,6 @@ categories:
         homepage: "https://www.editorialedomani.it"
         via: rss
         rss_url: "https://www.editorialedomani.it/rss"              # verificato 200 OK, <rss>
-      - name: "Il Foglio"
-        homepage: "https://www.ilfoglio.it"
-        via: apify           # sito SPA lato client, nessun feed statico raggiungibile (/rss è solo lo shell HTML)
-        rss_url: ""
-      - name: "Il Giornale"
-        homepage: "https://www.ilgiornale.it"
-        via: apify           # sito SPA lato client, i percorsi rss.xml tentati restituiscono HTML (200 fittizio)
-        rss_url: ""
       - name: "Politico Europe"
         homepage: "https://www.politico.eu"
         via: rss
@@ -203,10 +162,6 @@ categories:
         homepage: "https://www.dday.it"
         via: rss
         rss_url: "https://www.dday.it/rss"                         # verificato 200 OK, <feed> (Atom)
-      - name: "Wired Italia"
-        homepage: "https://www.wired.it"
-        via: rss
-        rss_url: "https://www.wired.it/feed/rss"                   # verificato 200 OK, <rss>; è il feed ufficiale (linkato dalla homepage) ma aggiorna con cadenza lenta (~settimane)
       - name: "Punto Informatico"
         homepage: "https://www.punto-informatico.it"
         via: rss
@@ -234,7 +189,7 @@ categories:
       - name: "Wired US"
         homepage: "https://www.wired.com"
         via: rss
-        rss_url: "https://www.wired.com/feed/rss"                  # verificato 200 OK, <feed> (Atom), contenuti freschi
+        rss_url: "https://www.wired.com/feed/tag/ai/latest/rss"    # verificato 200 OK, <feed> (Atom); il feed generale /feed/rss degrada in spam di codici promo (TurboTax, Uber Eats...), questo (sezione AI) è pulito
         lang: en
       - name: "Engadget"
         homepage: "https://www.engadget.com"
@@ -256,11 +211,6 @@ categories:
         via: rss
         rss_url: "https://www.zdnet.com/rss/all/"                  # verificato 200 OK, <feed> (Atom); URL trovato via homepage (i pattern /news/rss.xml, /rss.xml, feedburner sono 404)
         lang: en
-      - name: "VentureBeat AI"
-        homepage: "https://venturebeat.com/category/ai/"
-        via: apify            # /category/ai/feed/ risponde 429 (rate limit/bot protection), niente RSS pubblico utilizzabile
-        rss_url: ""
-        lang: en
       - name: "AI4Business"
         homepage: "https://www.ai4business.it"
         via: rss
@@ -272,7 +222,7 @@ categories:
       - name: "Startupitalia"
         homepage: "https://startupitalia.eu"
         via: rss
-        rss_url: "https://startupitalia.eu/feed/"                  # verificato 200 OK, <rss>, contenuti freschi
+        rss_url: "https://startupitalia.eu/startup/feed/"          # verificato 200 OK, <rss>; il feed generale /feed/ mescola geopolitica/generalista (missili, Iran...), questo (sezione startup) è al 100% pertinente
 
   curiosita:
     label: "Curiosità / Approfondimento"
@@ -324,7 +274,6 @@ categories:
         homepage: "https://aeon.co"
         via: rss
         rss_url: "https://aeon.co/feed.rss"                         # verificato 200 OK, <rss>, contenuti freschi
-        lang: en
         lang: en
 
 # =====================================================================
