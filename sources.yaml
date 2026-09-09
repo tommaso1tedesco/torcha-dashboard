@@ -162,10 +162,6 @@ categories:
     label: "Politica"
     # Mix volutamente di orientamenti diversi per un quadro equilibrato.
     sources:
-      - name: "Pagella Politica"
-        homepage: "https://pagellapolitica.it"
-        via: apify           # /feed restituisce l'app SPA (Nuxt), nessun link rss individuabile
-        rss_url: ""
       - name: "YouTrend"
         homepage: "https://www.youtrend.it"
         via: rss
@@ -190,10 +186,6 @@ categories:
         homepage: "https://www.ilfoglio.it"
         via: apify           # sito SPA lato client, nessun feed statico raggiungibile (/rss è solo lo shell HTML)
         rss_url: ""
-      - name: "Il Fatto Quotidiano"
-        homepage: "https://www.ilfattoquotidiano.it"
-        via: rss
-        rss_url: "https://www.ilfattoquotidiano.it/feed/"           # verificato 200 OK, <rss>
       - name: "Il Giornale"
         homepage: "https://www.ilgiornale.it"
         via: apify           # sito SPA lato client, i percorsi rss.xml tentati restituiscono HTML (200 fittizio)
