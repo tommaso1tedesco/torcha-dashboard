@@ -275,6 +275,11 @@ categories:
         via: rss
         rss_url: "https://aeon.co/feed.rss"                         # verificato 200 OK, <rss>, contenuti freschi
         lang: en
+      - name: "Politico"
+        homepage: "https://www.politico.com"
+        via: rss
+        rss_url: "https://rss.politico.com/politics-news.xml"       # verificato 200 OK, <rss>, contenuti freschi (i percorsi su www.politico.com/rss/... rispondono 403)
+        lang: en
 
 # =====================================================================
 # PARTE 2 — COSA CERCANO LE PERSONE (domanda di ricerca / interesse)
