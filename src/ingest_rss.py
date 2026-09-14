@@ -5,7 +5,7 @@ import logging
 import time
 import urllib.error
 from calendar import timegm
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import feedparser
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -54,12 +54,20 @@ def _normalize_entries(parsed: feedparser.FeedParserDict, source_name: str, cate
         title = getattr(entry, "title", None)
         if not url or not title:
             continue
+        published_at = _entry_published_at(entry)
+        # Scoperto dal vivo su Internazionale: il feed a volte include voci del programma
+        # del festival "Internazionale a Ferrara" con data delle sessioni future (es. inizio
+        # ottobre) invece che data di pubblicazione — finiscono in cima al ranking per
+        # "recenza" pur non essendo notizie. Scartiamo qualsiasi voce datata nel futuro
+        # (con un margine di 2h per fusi orari/orologi leggermente disallineati tra fonti).
+        if published_at > datetime.now(timezone.utc) + timedelta(hours=2):
+            continue
         rows.append({
             "title": title.strip(),
             "source": source_name,
             "category": category,
             "url": url.strip(),
-            "published_at": _entry_published_at(entry),
+            "published_at": published_at,
             "lang": lang,
         })
     return rows
