@@ -87,15 +87,34 @@ def _get_seed_keywords(limit: int = SEED_TOPICS_COUNT) -> list[str]:
 
 
 def _attribute_keyword(item: dict, seeds: list[str], fallback_text_fields: list[str]) -> str | None:
-    """Trova a quale seed appartiene un item: prima via campo esplicito, poi via overlap di parole."""
+    """Trova a quale seed appartiene un item: prima via campo esplicito, poi via overlap di parole.
+
+    Il campo esplicito (es. "input") viene comunque verificato contro il contenuto reale
+    dell'item prima di fidarsene: scoperto dal vivo che alcuni Actor lo valorizzano con la
+    query di ricerca anche quando il risultato non è pertinente — seed "Sì del Senato al"
+    ha fatto tornare 3 video del Senato USA (Epstein, McConnell, AI regulation), il cui
+    conteggio di visualizzazioni (fino a 200mila+) finiva sommato al Rising score di un tema
+    italiano con cui non c'entravano nulla. Senza overlap lessicale con l'item, il campo
+    esplicito viene scartato e si passa comunque al fallback per overlap.
+    """
+    text = " ".join(str(item.get(f, "")) for f in fallback_text_fields).lower()
+
+    def _overlaps(candidate: str) -> bool:
+        if not text.strip():
+            return True  # nessun contenuto da verificare: ci si fida del campo esplicito
+        words = [w for w in candidate.lower().split() if len(w) > 3]
+        return not words or any(w in text for w in words)
+
     for field in _QUERY_FIELD_CANDIDATES:
         val = item.get(field)
+        candidate = None
         if isinstance(val, str) and val.strip():
-            return val.strip()
-        if isinstance(val, dict) and val.get("name"):
-            return str(val["name"]).strip()
+            candidate = val.strip()
+        elif isinstance(val, dict) and val.get("name"):
+            candidate = str(val["name"]).strip()
+        if candidate and _overlaps(candidate):
+            return candidate
 
-    text = " ".join(str(item.get(f, "")) for f in fallback_text_fields).lower()
     if not text.strip():
         return None
     best_seed, best_overlap = None, 0
