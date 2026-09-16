@@ -56,9 +56,17 @@ YOUTUBE_SEED_COUNT = 2
 _QUERY_FIELD_CANDIDATES = ["input", "searchHashtag", "searchQuery", "query", "searchTerm", "inputHashtag", "hashtag"]
 
 
-def _shorten_to_query(title: str, max_words: int = 4) -> str:
+def _shorten_to_query(title: str, max_words: int = 4, min_words: int = 2) -> str:
     first_clause = re.split(r"[,:;—-]", title)[0]
     words = first_clause.split()
+    if len(words) < min_words:
+        # La prima clausola può essere troppo corta per fare da seed specifico (es.
+        # "Yemen, Arabia Saudita promette..." -> solo "Yemen"): un seed di una sola
+        # parola, soprattutto un nome di paese, produce suggerimenti Autocomplete
+        # generici/storici invece che legati alla notizia attuale (scoperto dal vivo:
+        # seed "Yemen" -> "yemen spider man", una storia virale di giugno). In quel
+        # caso si prendono le prime parole dell'intero titolo, non solo della clausola.
+        words = title.split()
     return " ".join(words[:max_words]).strip()
 
 
