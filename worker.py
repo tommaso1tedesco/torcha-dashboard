@@ -13,7 +13,7 @@ from src.ingest_rss import run_ingest
 from src.init_db import init_db
 from src.queries import get_recent_articles, get_recent_signals
 from src.rising import compute_rising_themes
-from src.velocity import record_snapshots
+from src.velocity import prune_old_snapshots, record_snapshots
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("worker")
@@ -59,6 +59,13 @@ def main() -> int:
     logger.info("Registrazione scatti Fase 5 (baseline storica)...")
     _record_heat_snapshots()
     _record_rising_snapshots()
+
+    # La pulizia non deve mai far fallire un ciclo già completato con successo.
+    try:
+        pruned = prune_old_snapshots()
+        logger.info("Pulizia scatti vecchi: %d righe rimosse", pruned)
+    except Exception:
+        logger.exception("Pulizia scatti vecchi fallita (ciclo comunque completato)")
     return 0
 
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from src.db import SessionLocal
 from src.models import TopicSnapshot
@@ -21,6 +21,8 @@ MIN_SNAPSHOTS_FOR_BASELINE = 2
 MIN_AGE_FOR_BASELINE_HOURS = 2.0  # esclude lo scatto "corrente" appena scritto
 VELOCITY_MULTIPLIER_MIN = 0.5
 VELOCITY_MULTIPLIER_MAX = 3.0
+# Margine di 1 giorno oltre la finestra di baseline: gli scatti più vecchi non vengono mai letti.
+SNAPSHOT_RETENTION_DAYS = BASELINE_LOOKBACK_DAYS + 1
 
 
 def _normalize_key(text: str) -> str:
@@ -43,6 +45,22 @@ def record_snapshots(kind: str, items: list[tuple[str, int, float]], category: s
     try:
         session.bulk_insert_mappings(TopicSnapshot, rows)
         session.commit()
+    finally:
+        session.close()
+
+
+def prune_old_snapshots() -> int:
+    """Cancella gli scatti oltre la retention e ritorna quante righe ha rimosso.
+
+    Senza questa pulizia topic_snapshots cresceva di ~50mila righe al giorno e in un mese
+    ha riempito il volume Postgres da 500 MB, bloccando ogni scrittura del worker.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=SNAPSHOT_RETENTION_DAYS)
+    session = SessionLocal()
+    try:
+        result = session.execute(delete(TopicSnapshot).where(TopicSnapshot.created_at < cutoff))
+        session.commit()
+        return result.rowcount or 0
     finally:
         session.close()
 
