@@ -23,21 +23,6 @@ def format_local(dt: datetime, fmt: str = "%d/%m %H:%M") -> str:
     return dt.astimezone(ITALY_TZ).strftime(fmt)
 
 
-# Etichette leggibili per le fonti di Parte 2: i nomi tecnici (es. "google_trends_daily")
-# non devono mai arrivare a schermo così come sono.
-SOURCE_LABELS: dict[str, tuple[str, str]] = {
-    "google_trends_daily": ("🔍", "Google Trends"),
-    "google_serp": ("🔎", "Ricerche Google"),
-    "tiktok": ("🎵", "TikTok"),
-    "youtube": ("▶️", "YouTube"),
-    "x": ("🐦", "X"),
-    "reddit": ("👽", "Reddit"),
-    "wikipedia_top_daily": ("📖", "Wikipedia"),
-    "wikipedia_trend": ("📖", "Wikipedia"),
-    "google_autocomplete": ("💬", "Ricerche correlate"),
-}
-
-
 def inject_base_css() -> None:
     st.markdown(
         """
@@ -98,14 +83,6 @@ def _score_tier(rank: int) -> str:
     return "mild"
 
 
-def source_badges_html(source_keys: list[str]) -> str:
-    seen: dict[str, str] = {}
-    for key in source_keys:
-        icon, label = SOURCE_LABELS.get(key, ("📡", key))
-        seen[html.escape(label)] = icon
-    return "".join(f'<span class="tc-src">{icon} {label}</span>' for label, icon in seen.items())
-
-
 def render_heat_card(rank: int, title: str, url: str | None, score: float, source_count: int,
                       sources: list[str], time_label: str, is_rising: bool) -> None:
     # HTML costruito su una riga sola e senza indentazione: st.markdown fa prima passare il
@@ -128,28 +105,6 @@ def render_heat_card(rank: int, title: str, url: str | None, score: float, sourc
         f'<span class="tc-src">📡 {source_count} font{"e" if source_count == 1 else "i"}</span>',
         f'<span class="tc-time">🕒 {time_label}</span>',
         rising_badge,
-        '</div>',
-        f'<div class="tc-meta" style="margin-top:6px">{src_html}</div>',
-        '</div>',
-        '</div>',
-    ]
-    st.markdown("".join(parts), unsafe_allow_html=True)
-
-
-def render_rising_card(rank: int, keyword: str, score: float, source_keys: list[str], is_new: bool) -> None:
-    tier = _score_tier(rank)
-    rank_class = "t1" if rank <= 3 else ("t2" if rank <= 10 else "")
-    new_badge = ' <span class="tc-badge rising">🔺 nuovo</span>' if is_new else ""
-    src_html = source_badges_html(source_keys)
-
-    parts = [
-        '<div class="tc-card">',
-        f'<div class="tc-rank {rank_class}">{rank}</div>',
-        '<div class="tc-body">',
-        f'<p class="tc-title">{html.escape(keyword)}</p>',
-        '<div class="tc-meta">',
-        f'<span class="tc-badge {tier}">📈 {score:g}</span>',
-        new_badge,
         '</div>',
         f'<div class="tc-meta" style="margin-top:6px">{src_html}</div>',
         '</div>',

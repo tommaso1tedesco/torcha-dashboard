@@ -3,9 +3,9 @@
 # =====================================================================
 # ISTRUZIONI PER CHI COMPILA:
 # - I campi `rss_url` sono da VERIFICARE dal vivo alla build. NON inventarli.
-#   Se una testata non ha un RSS pubblico funzionante, impostare `via: apify`.
+#   Se una testata non ha un RSS pubblico funzionante, NON va inserita: l'ingest
+#   gestisce solo `via: rss` (nessuna integrazione a pagamento).
 # - `via: rss`    -> raccolta tramite feed RSS (gratis, stabile).
-# - `via: apify`  -> raccolta tramite Actor Apify (proxy/anti-bot gestiti da Apify).
 # - `paywall: true` -> il feed dà solo titolo + abstract (niente testo completo):
 #   va benissimo come SEGNALE di cosa è caldo, non per ripubblicare.
 # - Una fonte può comparire in più categorie con la sua sezione dedicata (es. ANSA).
@@ -14,13 +14,12 @@
 settings:
   geo: IT
   lang: it
-  # frequenza del worker cron (minuti): governa solo l'ingest RSS/Wikipedia/Autocomplete
-  # (gratuiti). Le fonti Apify a pagamento hanno il proprio limite indipendente
-  # (APIFY_MIN_INTERVAL_HOURS in src/ingest_interests.py, 12h) e non seguono questo valore.
+  # frequenza del worker cron (minuti): governa l'ingest RSS
+  # (gratuiti).
   refresh_minutes: 30
 
 # =====================================================================
-# PARTE 1 — NOTIZIE CALDE, DIVISE PER CATEGORIA
+# NOTIZIE CALDE, DIVISE PER CATEGORIA
 # =====================================================================
 categories:
 
@@ -280,76 +279,3 @@ categories:
         via: rss
         rss_url: "https://rss.politico.com/politics-news.xml"       # verificato 200 OK, <rss>, contenuti freschi (i percorsi su www.politico.com/rss/... rispondono 403)
         lang: en
-
-# =====================================================================
-# PARTE 2 — COSA CERCANO LE PERSONE (domanda di ricerca / interesse)
-# =====================================================================
-# NOTA: niente LLM. Le query fatte a ChatGPT/Gemini/ecc. sono private e
-# non esistono come dato pubblico: non c'è nulla da raccogliere lì.
-interests:
-
-  apify:
-    token_env: "APIFY_TOKEN"        # il token sta in variabile d'ambiente
-    # NOTA: nessuno di questi Actor esiste in una vera modalità "trending now" pubblica
-    # per TikTok/YouTube/X senza login (solo Google Trends la offre davvero). Per gli altri
-    # tre usiamo hashtag/query "seed": i temi più caldi da Parte 1 (Heat score) + qualche
-    # hashtag generalista IT, e leggiamo il volume/engagement di risposta come segnale di
-    # interesse — è un'approssimazione onesta, non un vero feed "cosa sta esplodendo ora".
-    #
-    # CONTROLLO COSTI (misurato dal vivo con un ciclo completo a token reale: TikTok
-    # $0,56/run, Reddit $0,2-0,28, YouTube $0,20, SERP $0,03, Trends $0,02): a piena
-    # potenza e alla cadenza del worker (ogni 45 min) si superano i $1.000/mese. Per
-    # restare sotto ~€15/mese di spesa Apify, src/ingest_interests.py applica due leve
-    # (non modificabili qui): esegue le fonti Apify al più una volta ogni
-    # APIFY_MIN_INTERVAL_HOURS=12h (Wikipedia/Autocomplete restano gratis e girano
-    # sempre), e usa meno seed per SERP/TikTok/YouTube di quanti sources.yaml ne generi
-    # (SERP_SEED_COUNT=3, TIKTOK_SEED_COUNT=2, YOUTUBE_SEED_COUNT=2). Reddit e X sono
-    # escluse dal ciclo automatico (i più cari o meno affidabili per il segnale dato).
-    actors:
-      # ID e schema di input verificati dal vivo sull'Apify Store (pagina Input di ogni Actor).
-      google_trends:
-        actor_id: "data_xplorer/google-trends-fast-scraper"   # 357 utenti/mese, 4.9, aggiornato 2 mesi fa — unico actor che copre sia "trending" che "keyword" in uno
-        # mode "trending": top ricerche in salita per l'Italia nelle ultime 24h.
-        # mode "keyword": interest-over-time + query correlate, seed = titoli hot da Parte 1 (Heat score).
-        input_trending: { mode: "trending", trendingSearchesCountry: "IT", trendingSearchesTimeframe: "24", trendingSearchesCategories: [], trendingSearchesMaxItems: 50 }
-        input_keyword: { mode: "keyword", geo: "IT", predefinedTimeframe: "today 1-m", fetchRegionalData: false }
-      google_serp:
-        actor_id: "apify/google-search-scraper"   # ufficiale Apify, 177K utenti, PAA + AI Overview inclusi
-        # seed = stessi titoli hot da Parte 1; countryCode/languageCode sono i nomi reali dei campi.
-        input: { countryCode: "it", languageCode: "it", maxPagesPerQuery: 1, aiOverview: { scrapeFullAiOverview: true } }
-      tiktok_trending:
-        actor_id: "clockworks/tiktok-scraper"   # ufficiale Apify (Clockworks), 272K utenti
-        # niente "for you" pubblico: approssimiamo il trending con hashtag seed (temi hot + hashtag generalisti IT)
-        # resultsPerPage ridotto da 30 a 15 per controllo costi (era $0,56/run con 30×5 seed)
-        input: { resultsPerPage: 15, videoSearchSorting: "MOST_RELEVANT", videoSearchDateFilter: "ALL_TIME" }
-      youtube_trending:
-        actor_id: "streamers/youtube-scraper"   # ufficiale Apify (Streamers), 111K utenti
-        # niente endpoint "trending" diretto: approssimiamo con ricerca per parola chiave (seed) filtrata su "oggi"
-        # maxResults ridotto da 10 a 5 per controllo costi
-        input: { maxResults: 5, dateFilter: "today", sortingOrder: "relevance" }
-      x_trending:
-        actor_id: "apidojo/tweet-scraper"   # 98K utenti; niente "Trends for you" pubblico senza login: approssimiamo con searchTerms (seed) + sort Top
-        # ATTENZIONE (verificato dal vivo, 07/09/2026): l'Actor risponde SUCCEEDED ma
-        # ritorna solo {"noResults": true} anche per query molto comuni (es. "from:elonmusk").
-        # Probabile degradazione lato X/anti-scraping più che bug nostro. ESCLUSA dal
-        # ciclo automatico per controllo costi (vedi nota sopra): la funzione resta
-        # disponibile in src/ingest_interests.py per un uso manuale.
-        input: { maxItems: 50, sort: "Top", tweetLanguage: "it" }
-      reddit_rising:
-        actor_id: "trudax/reddit-scraper-lite"   # 41K utenti, 4.6 — sort "hot" sulle community indicate
-        # verificato dal vivo: serve l'URL .../hot/ (la sola root subreddit ritorna i metadati
-        # della community, non i post); la variante "Lite" non include voti/punteggio, quindi
-        # il codice usa il rank di posizione (ordine "hot") come metrica v0. ESCLUSA dal
-        # ciclo automatico per controllo costi (era la fonte più cara/lenta, $0,2-0,28/run,
-        # spesso in timeout): la funzione resta disponibile per un uso manuale.
-        input: { searchPosts: true, sort: "hot", maxPostCount: 20 }
-        subreddits: ["italy", "news", "worldnews"]
-
-  wikipedia:
-    project: "it.wikipedia"
-    method: "pageviews_api"         # API REST ufficiale, gratuita
-    signals: ["top_daily", "per_article_trend"]
-
-  google_autocomplete:
-    enabled: true
-    # endpoint suggest pubblico; le keyword seed arrivano dai temi caldi delle notizie

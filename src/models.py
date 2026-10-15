@@ -1,4 +1,4 @@
-"""Modelli ORM: articles (dati raw) e runs (storico ingestion)."""
+"""Modelli ORM: articles (dati raw), runs (storico ingestion) e topic_snapshots (baseline velocità)."""
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -27,20 +27,6 @@ class Run(Base):
     articles_ingested: Mapped[int] = mapped_column(Integer, default=0)
 
 
-class InterestRun(Base):
-    """Un'esecuzione dell'ingest Apify (Parte 2). Tabella separata da Run per non
-    dover alterare lo schema di una tabella già in produzione (niente Alembic)."""
-
-    __tablename__ = "interest_runs"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
-    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    sources_ok: Mapped[list] = mapped_column(JSON, default=list)
-    sources_failed: Mapped[list] = mapped_column(JSON, default=list)
-    signals_ingested: Mapped[int] = mapped_column(Integer, default=0)
-
-
 class Article(Base):
     """Articolo normalizzato: titolo, fonte, categoria, url, timestamp, lingua.
 
@@ -65,30 +51,12 @@ class Article(Base):
     first_seen_run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
 
-class Signal(Base):
-    """Segnale di domanda/interesse (Parte 2): una riga per keyword/topic per fonte.
-
-    `metric` ha significato diverso per fonte (traffic value di Google Trends,
-    n° tweet, upvote Reddit, ...): va normalizzato a livello di scoring, non qui.
-    """
-
-    __tablename__ = "signals"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    signal_source: Mapped[str] = mapped_column(String(32), index=True)  # google_trends_daily/keyword, google_serp, tiktok, youtube, x, reddit
-    keyword: Mapped[str] = mapped_column(String(512), index=True)
-    metric: Mapped[float] = mapped_column(default=0.0)
-    extra: Mapped[dict] = mapped_column(JSON, default=dict)
-    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
-    run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-
-
 class TopicSnapshot(Base):
     """Fase 5: uno scatto per tema/cluster ad ogni ciclo di ingest, usato come baseline
     storica per calcolare la vera velocità (tasso attuale vs media dei giorni precedenti).
 
-    `topic_key` è il titolo rappresentativo del cluster (Heat, kind="heat") o la keyword
-    rappresentativa del tema (Rising, kind="rising"), normalizzato (lowercase, strip).
+    `topic_key` è il titolo rappresentativo del cluster (Heat, kind="heat"), normalizzato
+    (lowercase, strip).
     Nota v0: il match nel tempo è per stringa esatta su `topic_key`, non per similarità
     come il clustering "live" — una stessa storia che cambia titolo tra un run e l'altro
     perde continuità storica. Limite noto, da eventualmente affinare in una fase successiva.
@@ -97,9 +65,9 @@ class TopicSnapshot(Base):
     __tablename__ = "topic_snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    kind: Mapped[str] = mapped_column(String(16), index=True)              # "heat" o "rising"
-    category: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)  # solo per "heat"
+    kind: Mapped[str] = mapped_column(String(16), index=True)              # "heat"
+    category: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)  # categoria del cluster
     topic_key: Mapped[str] = mapped_column(String(512), index=True)
     count: Mapped[int] = mapped_column(Integer, default=0)      # n. articoli/segnali nel cluster
-    intensity: Mapped[float] = mapped_column(default=0.0)       # heat/rising score v0 al momento dello scatto
+    intensity: Mapped[float] = mapped_column(default=0.0)       # heat score v0 al momento dello scatto
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

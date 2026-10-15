@@ -11,7 +11,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SOURCES_PATH = BASE_DIR / "sources.yaml"
 
 DATABASE_URL = os.environ["DATABASE_URL"]
-APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "")
 
 ACTIVE_CATEGORIES = [
     c.strip() for c in os.environ.get(
@@ -39,7 +38,7 @@ def rss_sources_for_category(category_key: str) -> list[dict]:
 
 
 def all_sources_for_category(category_key: str) -> list[dict]:
-    """Tutte le fonti configurate per una categoria, incluse quelle via: apify (per la riga di stato)."""
+    """Tutte le fonti configurate per una categoria, comprese quelle senza RSS (per la riga di stato)."""
     cfg = load_sources()
     cat = cfg["categories"].get(category_key)
     if not cat:
